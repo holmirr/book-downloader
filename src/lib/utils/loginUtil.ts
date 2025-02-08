@@ -1,6 +1,5 @@
 import crypto from "crypto";
 import { MyFetch } from "./network";
-import * as cheerio from "cheerio";
 import { TokenResponse } from "../types";
 
 export const createHash = () => {
@@ -50,11 +49,11 @@ export const m3login = async (client: MyFetch, id: string, password: string) => 
     const url = new URL(res.url);
     const code = url.searchParams.get("code");
     if (!code) {
-      throw new Error("code not found");
+      throw new Error("code not found...\n" + res.url);
     }
     return code;
   } catch (e) {
-    console.log(e);
+    console.log("login failed");
     throw e;
   }
 }
@@ -79,4 +78,4 @@ export const getToken = async (client: MyFetch, code: string) => {
 
 const client = MyFetch.createPC();
 
-m3login(client, "holmirr707@gmail.com", "nnb0427T!").then(code => getToken(client, code)).then(console.log).catch(console.error);
+m3login(client, "holmirr707@gmail.com", "nnb0427T").then(code => getToken(client, code)).then(console.log).catch(console.error);

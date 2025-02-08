@@ -12,7 +12,7 @@ export default function Login() {
       <h1>ログイン</h1>
       <form action={loginAction}>
         <input type="text" placeholder="ユーザー名" disabled={isPending} name="email" required />
-        <input type="password" placeholder="パスワード" disabled={isPending} name="password" required minLength={8}/>
+        <input type="password" placeholder="パスワード" disabled={isPending} name="password" required minLength={6}/>
         <button type="submit" disabled={isPending}>
 
 
