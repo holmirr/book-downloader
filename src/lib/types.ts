@@ -29,3 +29,26 @@ export interface Tokens {
   idToken: string;
 }
 
+export interface TokenInfo {
+  token: string;
+  expires_at: string;
+}
+
+// データベースの行の型定義
+export interface DBUser {
+  id: number;
+  email: string;
+  password: string;
+  name: string;
+  token_info: TokenInfo;
+  download_at: Date | null;
+}
+
+export interface DBJsonUser {
+  id: number;
+  email: string;
+  password: string;
+  name: string;
+  token_info: string;
+  download_at: Date | null;
+}

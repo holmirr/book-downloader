@@ -72,10 +72,3 @@ export const getToken = async (client: MyFetch, code: string) => {
     throw e;
   }
 }
-
-
-
-
-const client = MyFetch.createPC();
-
-m3login(client, "holmirr707@gmail.com", "nnb0427T").then(code => getToken(client, code)).then(console.log).catch(console.error);

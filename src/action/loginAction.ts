@@ -1,6 +1,6 @@
 "use server";
 
-import { signIn } from "@/auth/auth";
+import { signIn, AuthorizationError } from "@/auth/auth";
 import { AuthError } from "next-auth";
 export async function login(prevState: { message: string } | undefined, formData: FormData) {
   try {
@@ -14,6 +14,8 @@ export async function login(prevState: { message: string } | undefined, formData
         default:
           return { message: "ログインに失敗しました" };
       }
+    } else if (error instanceof AuthorizationError) {
+      return { message: "権限がありません" };
     }
     throw error;
 
