@@ -5,24 +5,22 @@ import { isValidToken } from "@/lib/utils/time";
 import { isValid } from "zod";
 import { MyFetch } from "@/lib/utils/network";
 import { m3login, getToken } from "@/lib/utils/loginUtil";
+import { getUserFromSession } from "@/auth/auth";
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
-  const mail = session?.user?.email;
-  if (!mail) redirect("/login");
-  const user = await getUser(mail);
-  if (!user) redirect("/login");
-  const password = user.password;
-  const expires_at = user.token_info.expires_at;
+  const { email, password, token_info: { expires_at }, name } = await getUserFromSession();
   const isValid = isValidToken(expires_at);
+
+
   if (!isValid) {
     try {
       const client = MyFetch.createPC();
-      const conde = await m3login(client, mail, password);
+      const conde = await m3login(client, email, password);
       const data = await getToken(client, conde);
       const token = data.token.idToken;
       const expires_at = data.token.expiresAt;
-      user.token_info = { token, expires_at };
-      await updateUser(mail, { token_info: { token, expires_at } });
+      await updateUser(email, { token_info: { token, expires_at } });
+
     } catch (e) {
       console.log(e);
       await signOut({ redirectTo: "/login" });
@@ -31,10 +29,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div>
-
       <h1>Dashboard</h1>
-      <p>Hello, {user.name}</p>
+      <p>Hello, {name}</p>
       {children}
     </div>
+
   );
 }

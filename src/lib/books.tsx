@@ -1,6 +1,8 @@
 import { MyFetch } from "./utils/network";
 import * as cheerio from "cheerio";
 import { saveImage, createPDF } from "./utils/files";
+import { storeBooks } from "./utils/database";
+import { InitInfo } from "./types";
 
 export async function getTitleAndId(url: string) {
   try {
@@ -26,12 +28,7 @@ export async function getTitleAndId(url: string) {
   }
 }
 
-export async function getInit(id: string, token: string): Promise<{
-  maxtime: number,
-  page_direction: string,
-  timeleft: number,
-  total_images: number,
-}> {
+export async function getInit(id: string, token: string): Promise<InitInfo> {
   try {
     const response = await fetch(`https://api.m2plus.com/api/v1/book/${id}/trial/init`, {
       headers: {
@@ -54,14 +51,21 @@ export async function getInit(id: string, token: string): Promise<{
   }
 }
 
-export async function getBook(title: string, id: string, token: string, leftTime: number, maxPage: number, startPage: number = 1) {
-
-  const abortController = new AbortController();
-
+export async function getBook(abortController: AbortController, _title: string, _id: string, token: string, leftTime: number, _maxPage: number, startPage: number = 1, controller?: ReadableStreamController<Uint8Array>) {
   leftTime -= 3;
+  const title = _title;
+  const id = _id;
+  const maxPage = _maxPage;
+
+  const encode = (data: any) => {
+    const encoder = new TextEncoder();
+    return encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
+  }
+
 
   const client = new MyFetch({
     headers: {
+
       "Accept": "application/json, text/plain, */*",
       "Accept-Encoding": "gzip, deflate, br, zstd",
       "Accept-Language": "ja,en-US;q=0.9,en;q=0.8,zh-CN;q=0.7,zh-TW;q=0.6,zh;q=0.5",
@@ -83,6 +87,7 @@ export async function getBook(title: string, id: string, token: string, leftTime
 
 
   const fetchInterval = setInterval(async () => {
+    const errorCount: { [key: number]: number } = {};
     try {
       const data = {
         "timeleft": leftTime,
@@ -90,14 +95,18 @@ export async function getBook(title: string, id: string, token: string, leftTime
         "pages": startPage === 1 ? [1] : [startPage, startPage + 1]
       }
 
-      console.log(`leftTime=${leftTime}`);
       const response = await client.post(`https://api.m2plus.com/api/v1/book/${id}/trial/time`, { json: data });
+      controller?.enqueue(encode({ type: "timeleft", timeleft: leftTime }));
       console.log(leftTime, response.status);
       leftTime = leftTime - 3;
+
+
       if (leftTime <= 0) {
         abortController.abort();
+        controller?.enqueue(encode({ type: "finish", reason: "timeup" }));
         clearInterval(fetchInterval);
       }
+
 
 
     } catch (error) {
@@ -105,52 +114,90 @@ export async function getBook(title: string, id: string, token: string, leftTime
         console.log("fetchImage trigger abort")
         clearInterval(fetchInterval);
       } else {
-        console.log("インターバルエラー", error);
+        console.log(`${leftTime}秒\n`, "インターバルエラー", error);
+        controller?.enqueue(encode({ type: "timeleftError", timeleft: leftTime }));
+        errorCount[leftTime] = (errorCount[leftTime] ?? 0) + 1;
+        if (errorCount[leftTime] >= 3) {
+
+          console.log(`${leftTime}秒\n`, "インターバルエラー", "連続3回エラー");
+          controller?.enqueue(encode({ type: "finish", reason: "timeleftError" }));
+          abortController.abort();
+          clearInterval(fetchInterval);
+
+        }
       }
     }
   }, 3000);
 
   const fetchImage = async () => {
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    let isFirstRequest = true;
-    while (startPage <= maxPage) {
-      try {
-        const currentPage = isFirstRequest ? 1 : startPage;
-        const url = `https://api.m2plus.com/api/v1/book/${id}/trial/get/${currentPage === 1 ? 1 : `${currentPage}:${currentPage + 1}`}`;
-        console.log(`page=${currentPage}`);
-        const response = await client.get(url);
-        const data: { image: string } = await response.json();
-        const base64image = data.image;
-        saveImage(base64image, title, currentPage, currentPage !== 1);
-        console.log(currentPage, "download success");
-        
-        if (isFirstRequest) {
-          isFirstRequest = false;
-          startPage = startPage === 1 ? 2 : startPage;
-        } else {
-          startPage += 2;
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      let isFirstRequest = true;
+      const errorCount: { [key: number]: number } = {};
+      while (startPage <= maxPage) {
 
-      } catch (error) {
-        if ((error as Error).name === "AbortError") {
-          console.log("interval trigger abort")
-          return;
-        } else {
-          console.log("画像取得エラー", error);
+        try {
+          const currentPage = isFirstRequest ? 1 : startPage;
+          const url = `https://api.m2plus.com/api/v1/book/${id}/trial/get/${currentPage === 1 ? 1 : `${currentPage}:${currentPage + 1}`}`;
+          console.log(`page=${currentPage}`);
+          const response = await client.get(url);
+          const data: { image: string } = await response.json();
+
+          const base64image = data.image;
+          saveImage(base64image, title, currentPage, currentPage !== 1);
+          controller?.enqueue(encode({ type: "image", page: currentPage }));
+          console.log(currentPage, "download success");
+
+
+          if (isFirstRequest) {
+            isFirstRequest = false;
+            startPage = startPage === 1 ? 2 : startPage;
+          } else {
+            startPage += 2;
+          }
           await new Promise(resolve => setTimeout(resolve, 100));
-          continue;
+
+        } catch (error) {
+          if ((error as Error).name === "AbortError") {
+            console.log("interval trigger abort");
+            return;
+          } else {
+            errorCount[startPage] = (errorCount[startPage] ?? 0) + 1;
+            console.log(`${startPage}ページ\n`, "画像取得エラー", error);
+            controller?.enqueue(encode({ type: "imageError", page: startPage }));
+
+            if (errorCount[startPage] >= 3) {
+              console.log(`${startPage}ページ\n`, "画像取得エラー", "連続3回エラー");
+              controller?.enqueue(encode({ type: "finish", reason: "imageError" }));
+              abortController.abort();
+              return;
+
+
+
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+            continue;
+
+          }
+
         }
       }
+      abortController.abort();
+      controller?.enqueue(encode({ type: "finish", reason: "complete" }));
     }
-    abortController.abort();
-  }
 
+    finally {
+      startPage--;
+      if (startPage >= maxPage) {
+        storeBooks(title, id, maxPage, true);
+      } else {
+        storeBooks(title, id, startPage, false);
+      }
+    }
+  }
   await fetchImage();
   return startPage;
 }
-
-
 
 
 async function test() {
@@ -160,14 +207,13 @@ async function test() {
   const client = MyFetch.createPC();
   const { token: { idToken } } = await getToken(client, await m3login(client, "holmirr707@gmail.com", "nnb0427T!"));
   const { title, id } = await getTitleAndId("https://www.m2plus.com/content/6816?referrer1Name=%E3%82%B7%E3%83%8A%E3%82%B8%E3%83%BC&referrer1To=%2Fsearch%3Fp%3D24&eop_source_page=m2plus_3.0&eop_source_content=contents_item_img");
-  
+
   const init = await getInit(id, idToken);
   console.log(init);
-  const endPage = await getBook(title, id, idToken, init.timeleft, init.total_images, Math.floor((init.total_images -5)/2) * 2);
+
+  const endPage = await getBook(new AbortController(), title, id, idToken, init.timeleft, init.total_images, Math.floor((init.total_images - 5) / 2) * 2);
   console.log("endpage", endPage);
   if (endPage >= init.total_images) {
     createPDF(title);
   }
-
-
 }

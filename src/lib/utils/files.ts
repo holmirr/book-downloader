@@ -83,3 +83,11 @@ export async function createPDF(title: string) {
     throw error;
   }
 }
+
+export async function deleteImage(title: string) {
+  const safeTitle = title.replace(/\//g, '_');
+  const dirPath = path.join(process.cwd(), 'public', 'images', safeTitle);
+  fs.rmSync(dirPath, { recursive: true, force: true });
+}
+
+

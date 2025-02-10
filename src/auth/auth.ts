@@ -8,8 +8,8 @@ import { m3login, getToken } from "@/lib/utils/loginUtil";
 import { MyFetch } from "@/lib/utils/network";
 import { createUser, getPermissions } from "@/lib/utils/database";
 import { DBUser } from "@/lib/types";
-
-
+import { logout } from "@/action/loginAction";
+import { redirect } from "next/navigation";
 export class AuthorizationError extends Error {
   constructor(message: string) {
     super(message);
@@ -61,4 +61,19 @@ export const { auth, signIn, signOut } = NextAuth({
 
 });
 
+export async function getUserFromSession(): Promise<DBUser> {
+  const session = await auth();
+  if (!session) {
+    redirect("/api/signout");
+  }
+  const email = session.user?.email;
+  if (!email) {
+    redirect("/api/signout");
+  }
+  const user = await getUser(email);
+  if (!user) {
+    redirect("/api/signout");
+  }
+  return user;
 
+}

@@ -34,6 +34,12 @@ export interface TokenInfo {
   expires_at: string;
 }
 
+export interface InitInfo {
+  maxtime: number;
+  page_direction: string;
+  timeleft: number;
+  total_images: number;
+}
 // データベースの行の型定義
 export interface DBUser {
   id: number;
@@ -52,3 +58,12 @@ export interface DBJsonUser {
   token_info: string;
   download_at: Date | null;
 }
+
+export interface DBBook {
+  index: number;
+  title: string;
+  id: string;
+  page: number;
+  complete: boolean;
+}
+
