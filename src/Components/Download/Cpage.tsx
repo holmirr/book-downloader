@@ -1,24 +1,48 @@
 'use client'
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DownloadButton from './DownloadButton';
 import URLform from './URLform';
-import BookInfo from './BookInfo';
 import Progress from './Progress';
 import Result from './Result';
+import { useRouter } from 'next/navigation';
 
-export default function ClientPage({ title, id, initialLeftTime, totalPage, startPage = 1 }: { title: string, id: string, initialLeftTime: number, totalPage: number, startPage: number }) {
+export default function ClientPage({ title, id, initialLeftTime, totalPage, startPage = 1, refresh }: { title: string, id: string, initialLeftTime: number, totalPage: number, startPage: number, refresh: number }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [progress, setProgress] = useState(startPage);
   const [leftTime, setLeftTime] = useState(initialLeftTime);
   const [finishMessage, setFinishMessage] = useState("");
   const [pdfMessage, setPdfMessage] = useState("");
-  const [finish, setFinish] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const isFirstMountForDownload = useRef(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    setLeftTime(initialLeftTime);
+  }, [initialLeftTime]);
+
+  useEffect(() => {
+    setLoading(false);
+    setProgress(startPage);
+  }, [refresh]);
+
+  useEffect(() => {
+    if (isFirstMountForDownload.current) {
+      isFirstMountForDownload.current = false;
+      return;
+    }
+    if (!isDownloading) {
+      router.replace(`/dashboard/download?${new URLSearchParams({ title: title ?? "", id: id ?? "" }).toString()}`);
+    }
+  }, [isDownloading]);
+
 
   // EventSource インスタンスを参照するための useRef を作成
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const handleDownload = () => {
-    const eventSource = new EventSource(`/api/download?${new URLSearchParams({ title: title ?? "", id: id ?? "" }).toString()}`);
+    setFinishMessage("");
+    setPdfMessage("");
+    const eventSource = new EventSource(`/api/download?${new URLSearchParams({ title: title ?? "", id: id ?? "", startPage: startPage.toString() }).toString()}`);
     // 作成した EventSource を参照に保存
     eventSourceRef.current = eventSource;
 
@@ -42,7 +66,7 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
             case "timeup":
               setFinishMessage("時間切れです");
               setIsDownloading(false);
-              setFinish(true);
+
               eventSource.close();
               eventSourceRef.current = null;
               break;
@@ -50,7 +74,6 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
 
               setFinishMessage("インターバルエラーです");
               setIsDownloading(false);
-              setFinish(true);
               eventSource.close();
               eventSourceRef.current = null;
               break;
@@ -58,7 +81,6 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
             case "imageError":
               setFinishMessage("画像取得エラーです");
               setIsDownloading(false);
-              setFinish(true);
               eventSource.close();
               eventSourceRef.current = null;
               break;
@@ -67,33 +89,33 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
               setFinishMessage("ダウンロード完了しました");
               break;
           }
-          // 完了時に EventSource を閉じる
-          break;
+        // 完了時に EventSource を閉じる
         case "pdf":
           switch (data.reason) {
+            case "start":
+              setPdfMessage("PDF作成中です");
+              break;
             case "success":
               setPdfMessage("PDF作成完了しました");
+              setIsDownloading(false);
+              eventSource.close();
+              eventSourceRef.current = null;
               break;
             case "error":
               setPdfMessage("PDF作成エラーです");
+              setIsDownloading(false);
+              eventSource.close();
+              eventSourceRef.current = null;
               break;
           }
-          setIsDownloading(false);
-          setFinish(true);
-          eventSource.close();
-          eventSourceRef.current = null;
           break;
-
       }
     };
 
     eventSource.onerror = (error) => {
-      console.error("EventSourceエラー", error);
-      if (eventSource.readyState === EventSource.CLOSED) {
-        console.log("接続が閉じられました");
-      }
+      console.log("EventSourceエラー", error);
+      setFinishMessage("接続エラーが発生しました");
       setIsDownloading(false);
-      setFinish(true);
       eventSourceRef.current = null;
     };
 
@@ -107,40 +129,16 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
+    setFinishMessage("ダウンロードがキャンセルされました");
     setIsDownloading(false);
-    setFinish(true);
   };
 
   return (
     <div>
-      <URLform setFinishMessage={setFinishMessage} setPdfMessage={setPdfMessage} setFinish={setFinish} />
-      {isDownloading ? (
-        <Progress progress={progress} totalPage={totalPage} leftTime={leftTime} />
-      ) : finish ? (
-        <Result finishMessage={finishMessage} pdfMessage={pdfMessage} isDownloading={isDownloading} finish={finish} />
-      ) : (
-        <div>
-          <Progress progress={progress} totalPage={totalPage} leftTime={leftTime} />
-          <BookInfo title={title} timeleft={leftTime} totalPage={totalPage} startPage={progress} finish={finish} />
-        </div>
-      )}
-      <div>
-
-        {finishMessage && !isDownloading && !finish && (
-          <div>
-            <p>ダウンロード結果：</p>
-            <p>{finishMessage}</p>
-          </div>
-        )}
-
-        {pdfMessage && (
-          <div>
-            <p>PDF作成結果：</p>
-            <p>{pdfMessage}</p>
-          </div>
-        )}
-      </div>
-      <DownloadButton isDownloading={isDownloading} handleCancel={handleCancel} handleDownload={handleDownload} />
+      <URLform setLoading={setLoading} loading={loading} setFinishMessage={setFinishMessage} setPdfMessage={setPdfMessage} />
+      <Progress title={title} progress={progress} totalPage={totalPage} leftTime={leftTime} loading={loading} />
+      <Result finishMessage={finishMessage} pdfMessage={pdfMessage} isDownloading={isDownloading} />
+      <DownloadButton loading={loading} leftTime={leftTime} isDownloading={isDownloading} handleCancel={handleCancel} handleDownload={handleDownload} maxPage={totalPage} startPage={startPage} />
     </div>
   );
 }

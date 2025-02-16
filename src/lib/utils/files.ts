@@ -3,6 +3,33 @@ import * as path from 'path';
 import sharp from 'sharp';
 import { PDFDocument } from 'pdf-lib';
 
+export function getStartPage(title: string) {
+  const safeTitle = title.replace(/\//g, '_');
+  const dirPath = path.join(process.cwd(), 'public', 'images', safeTitle);
+  if (!fs.existsSync(dirPath) || title === "") {
+    return 1;
+  }
+  const files = fs.readdirSync(dirPath);
+  
+  const maxPage = Math.max(...files.map(filename => {
+    // ファイル名から拡張子を除去
+    const nameWithoutExt = filename.replace('.png', '');
+    
+    // ハイフンで分割して最後の数字を取得
+    // 例: "2-3" → ["2", "3"] → "3"
+    //     "8" → ["8"] → "8"
+    const numbers = nameWithoutExt.split('_');
+    const lastNumber = numbers[numbers.length - 1];
+    const result = parseInt(lastNumber, 10);
+    if (isNaN(result)) {
+      return 1;
+    }
+    return result;
+  }));
+  console.log(`maxPage is ${maxPage}`);
+  return maxPage + 1;
+}
+
 export async function saveImage(image: string, title: string, startPage: number, isDouble: boolean) {
   // タイトルから不正なパス文字を置換
   const safeTitle = title.replace(/\//g, '_');
@@ -89,5 +116,3 @@ export async function deleteImage(title: string) {
   const dirPath = path.join(process.cwd(), 'public', 'images', safeTitle);
   fs.rmSync(dirPath, { recursive: true, force: true });
 }
-
-

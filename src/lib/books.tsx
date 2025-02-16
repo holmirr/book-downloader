@@ -11,19 +11,15 @@ export async function getTitleAndId(url: string) {
     const $ = cheerio.load(data);
     let title = "";
     let id = "";
-    $("script").each((i, el) => {
+    const initData: any[] = JSON.parse($("script#__NUXT_DATA__").text());
+    const detailIndex: number = initData.find(item => item && typeof item === "object" && Object.keys(item).includes("detail")).detail;
+    title = initData[initData[detailIndex].title];
+    id = initData[initData[initData[initData[detailIndex].books][0]].id];
 
-      const script = $(el).text();
-      if (script.includes("window.__NUXT__=")) {
-        title = script.match(/title:"([^"]+)"/)?.[1] ?? "";
-        id = script.match(/id:\s*(\d+)/)?.[1] ?? "";
-        return false;
-      }
-
-    });
     return { title, id };
   } catch (error) {
     console.log("タイトルとID取得エラー");
+    console.log(error);
     throw error;
   }
 }
@@ -138,7 +134,12 @@ export async function getBook(abortController: AbortController, _title: string, 
 
         try {
           const currentPage = isFirstRequest ? 1 : startPage;
-          const url = `https://api.m2plus.com/api/v1/book/${id}/trial/get/${currentPage === 1 ? 1 : currentPage === maxPage ? currentPage :`${currentPage}:${currentPage + 1}`}`;
+          let url = "";
+          if (currentPage % 2 === 1 || currentPage === maxPage){
+            url = `https://api.m2plus.com/api/v1/book/${id}/trial/get/${currentPage}`;
+          } else{
+            url = `https://api.m2plus.com/api/v1/book/${id}/trial/get/${currentPage}:${currentPage + 1}`;
+          }
           console.log(`page=${currentPage}`);
           const response = await client.get(url);
           const data: { image: string } = await response.json();

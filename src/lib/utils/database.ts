@@ -23,7 +23,6 @@ export async function createTable() {
       id VARCHAR(255) NOT NULL UNIQUE,
       page INT NOT NULL,
       complete BOOLEAN NOT NULL
-
     )`;
     console.log("created table");
 

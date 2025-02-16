@@ -14,11 +14,9 @@ export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   const title = searchParams.get("title");
-  console.log("id", id);
-  console.log("title", title);
+  const startPage = parseInt(searchParams.get("startPage") ?? "1");
   if (!id || !title) return new Response("id もしくは title が指定されていません", { status: 401 });
   const user = await getUserFromSession();
-  console.log("user", user);
   const token = user.token_info.token;
 
   const { total_images, timeleft } = await getInit(id, token);
@@ -26,10 +24,11 @@ export async function GET(request: Request): Promise<Response> {
   // ReadableStream を作成して、SSE 用のストリームにする
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const endPage = await getBook(abortController, title, id, token, timeleft, total_images, 1, controller);
+      const endPage = await getBook(abortController, title, id, token, timeleft, total_images, startPage, controller);
       if (endPage >= total_images) {
         try {
-          createPDF(title);
+          controller.enqueue(encode({ type: "pdf", reason: "start" }));
+          await createPDF(title);
           controller.enqueue(encode({ type: "pdf", reason: "success" }));
           deleteImage(title);
         } catch (error) {
