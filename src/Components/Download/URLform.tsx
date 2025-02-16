@@ -13,18 +13,12 @@ export default function URLform({ setFinishMessage, setPdfMessage, setFinish }: 
 
 
   useEffect(() => {
-    if (urlActionState.success) {
-      router.replace(`/dashboard/download?${urlActionState.message}`);
-
-
-    } else {
-      router.replace("/dashboard/download")
-    }
-    setFinishMessage("");
-    setPdfMessage("");
-    setFinish(false);
-    setUrl("");
-
+    // if (urlActionState.success) {
+    //   router.replace(`/dashboard/download?${urlActionState.message}`);
+    // } else {
+    //   router.replace("/dashboard/download")
+    // }
+    
   }, [urlActionState])
 
 
@@ -39,7 +33,7 @@ export default function URLform({ setFinishMessage, setPdfMessage, setFinish }: 
           {isPending ? "送信中..." : "送信"}
         </button>
       </form>
-      {urlActionState.success || <p>{urlActionState.message}</p>}
+      {urlActionState && (urlActionState.success || <p>{urlActionState.message}</p>)}
     </div>
 
 

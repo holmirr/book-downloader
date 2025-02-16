@@ -92,7 +92,7 @@ export async function getBook(abortController: AbortController, _title: string, 
       const data = {
         "timeleft": leftTime,
         "zoomedIn": false,
-        "pages": startPage === 1 ? [1] : [startPage, startPage + 1]
+        "pages": startPage === 1 ? [1] : startPage === maxPage ? [maxPage] : [startPage, startPage + 1]
       }
 
       const response = await client.post(`https://api.m2plus.com/api/v1/book/${id}/trial/time`, { json: data });
@@ -138,7 +138,7 @@ export async function getBook(abortController: AbortController, _title: string, 
 
         try {
           const currentPage = isFirstRequest ? 1 : startPage;
-          const url = `https://api.m2plus.com/api/v1/book/${id}/trial/get/${currentPage === 1 ? 1 : `${currentPage}:${currentPage + 1}`}`;
+          const url = `https://api.m2plus.com/api/v1/book/${id}/trial/get/${currentPage === 1 ? 1 : currentPage === maxPage ? currentPage :`${currentPage}:${currentPage + 1}`}`;
           console.log(`page=${currentPage}`);
           const response = await client.get(url);
           const data: { image: string } = await response.json();
@@ -152,8 +152,10 @@ export async function getBook(abortController: AbortController, _title: string, 
           if (isFirstRequest) {
             isFirstRequest = false;
             startPage = startPage === 1 ? 2 : startPage;
-          } else {
+          } else if (currentPage < maxPage) {
             startPage += 2;
+          } else {
+            startPage++;
           }
           await new Promise(resolve => setTimeout(resolve, 100));
 
