@@ -1,6 +1,8 @@
 import postgres from "postgres";
 import { DBUser, DBJsonUser, TokenInfo, DBBook } from "@/lib/types";
-const sql = postgres(process.env.POSTGRES_URL!, {ssl: "require"});
+const sql = postgres(process.env.POSTGRES_URL!, {
+  ssl: "require", 
+});
 
 
 export async function createTable() {
@@ -11,19 +13,14 @@ export async function createTable() {
       password VARCHAR(255) NOT NULL,
       name VARCHAR(255) NOT NULL,
       token_info JSONB NOT NULL,
-      download_at TIMESTAMP
+      download_at TIMESTAMP WITH TIME ZONE
     )`;
     await sql`CREATE TABLE IF NOT EXISTS permissions (
       id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL
+      name VARCHAR(255) NOT NULL,
+      master BOOLEAN DEFAULT FALSE
     )`;
-    await sql`CREATE TABLE IF NOT EXISTS books (
-      index SERIAL PRIMARY KEY,
-      title VARCHAR(255) NOT NULL UNIQUE,
-      id VARCHAR(255) NOT NULL UNIQUE,
-      page INT NOT NULL,
-      complete BOOLEAN NOT NULL
-    )`;
+
     console.log("created table");
 
   } catch (e) {
@@ -67,9 +64,14 @@ export async function updateUser(email: string, updated: Partial<DBUser>) {
       ...updated,
       token_info: updated.token_info ? JSON.stringify(updated.token_info) : undefined
     };
+
+    const filteredUpdated = Object.fromEntries(
+      Object.entries(updatedWithStringified).filter(([_, v]) => v !== undefined)
+    );
+    
     await sql`
       UPDATE users 
-      SET ${sql(updatedWithStringified)}
+      SET ${sql(filteredUpdated)}
       WHERE email = ${email}
     `;
   } catch (e) {
@@ -93,51 +95,24 @@ export async function getPermissions(name: string) {
   }
 }
 
-export async function storeBooks(title: string, id: string, page: number, complete: boolean) {
+export async function getIsMaster(name: string) {
   try {
-    await sql`
-      INSERT INTO books (title, id, page, complete)
-      VALUES (${title}, ${id}, ${page}, ${complete})
-      ON CONFLICT (id) DO UPDATE 
-      SET title = EXCLUDED.title,
-          page = EXCLUDED.page,
-          complete = EXCLUDED.complete
-    `;
-  } catch (e) {
-    console.log("書籍情報保存エラー:", e);
-    throw e;
-  }
-}
-
-export async function getNotCompleteBooks() {
-  try {
-    const books = await sql<DBBook[]>`SELECT * FROM books WHERE complete = FALSE`;
-    return books;
-  } catch (e) {
-    console.log("書籍情報取得エラー");
-    throw e;
-  }
-}
-
-export async function findBook(id?:string, title?:string) {
-  try {
-    if (id) {
-      const book = await sql<DBBook[]>`SELECT * FROM books WHERE id = ${id}`;
-      return book[0] ?? null;
-    }
-
-    else if (title) {
-      const book = await sql<DBBook[]>`SELECT * FROM books WHERE title = ${title}`;
-      return book[0] ?? null;
+    const isMaster = await sql<{master: boolean}[]>`SELECT master FROM permissions WHERE name = ${name}`;
+    if (isMaster.length === 0) {
+      throw new Error("マスターカラム取得できませんでした");
     }
     else {
-      return null;
+      return isMaster[0].master;
     }
   } catch (e) {
-    console.log("書籍情報取得エラー");
+    console.log("マスターユーザー取得エラー");
     throw e;
   }
-
 }
+
+
+
+
+
 
 

@@ -32,16 +32,30 @@ export default function URLform({setLoading, loading, setFinishMessage, setPdfMe
   }, [urlActionState]);
 
   return (
-    <div>
-      <form action={urlAction}>
-
-        <label htmlFor="url">URLを貼り付けてください</label>
-        <input type="text" placeholder="URL" name="url" value={url} onChange={(e) => setUrl(e.target.value)} />
-        <button type="submit" disabled={loading}>
+    <div className="bg-white rounded-lg shadow-sm p-6">
+      <form action={urlAction} className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="url" className="block text-sm font-medium text-gray-700">
+            URLを貼り付けてください
+          </label>
+          <input 
+            type="text" 
+            id="url"
+            placeholder="URL" 
+            name="url" 
+            value={url} 
+            onChange={(e) => setUrl(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <button 
+          type="submit" 
+          disabled={loading || !url}
+          className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
           {loading ? "送信中..." : "送信"}
         </button>
       </form>
     </div>
   )
-
 }

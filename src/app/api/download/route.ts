@@ -1,9 +1,9 @@
 import { getBook } from "@/lib/books";
-import { createPDF, deleteImage } from "@/lib/utils/files";
+import { createPDF, deleteImage, deletePDF } from "@/lib/utils/files";
 import { getUserFromSession } from "@/auth/auth";
 import { getInit } from "@/lib/books";
-
-
+import { uploadFile } from "@/lib/google";
+import { updateUser } from "@/lib/utils/database";
 function encode(data: any) {
   const encoder = new TextEncoder();
   return encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
@@ -28,9 +28,12 @@ export async function GET(request: Request): Promise<Response> {
       if (endPage >= total_images) {
         try {
           controller.enqueue(encode({ type: "pdf", reason: "start" }));
-          await createPDF(title);
+          const pdfPath = await createPDF(title);
+          await uploadFile(pdfPath);
+          await deleteImage(title);
+          await deletePDF(title);
+          await updateUser(user.email, { download_at: new Date() });
           controller.enqueue(encode({ type: "pdf", reason: "success" }));
-          deleteImage(title);
         } catch (error) {
           console.error("PDF作成エラー", error);
           controller.enqueue(encode({ type: "pdf", reason: "error" }));

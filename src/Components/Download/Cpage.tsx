@@ -6,7 +6,7 @@ import Progress from './Progress';
 import Result from './Result';
 import { useRouter } from 'next/navigation';
 
-export default function ClientPage({ title, id, initialLeftTime, totalPage, startPage = 1, refresh }: { title: string, id: string, initialLeftTime: number, totalPage: number, startPage: number, refresh: number }) {
+export default function ClientPage({ title, id, initialLeftTime, totalPage, startPage = 1, refresh, isExist, notFound }: { title: string, id: string, initialLeftTime: number, totalPage: number, startPage: number, refresh: number, isExist: boolean, notFound: boolean }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [progress, setProgress] = useState(startPage);
   const [leftTime, setLeftTime] = useState(initialLeftTime);
@@ -134,11 +134,25 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
   };
 
   return (
-    <div>
+    <>
       <URLform setLoading={setLoading} loading={loading} setFinishMessage={setFinishMessage} setPdfMessage={setPdfMessage} />
-      <Progress title={title} progress={progress} totalPage={totalPage} leftTime={leftTime} loading={loading} />
-      <Result finishMessage={finishMessage} pdfMessage={pdfMessage} isDownloading={isDownloading} />
-      <DownloadButton loading={loading} leftTime={leftTime} isDownloading={isDownloading} handleCancel={handleCancel} handleDownload={handleDownload} maxPage={totalPage} startPage={startPage} />
-    </div>
+      {isExist ? (
+        <div>
+          <p>ダウンロード済みです</p>
+        </div>
+      ) :
+        notFound ? (
+          <div>
+            <p>立ち読みが提供されていません</p>
+          </div >
+        ) : (
+          <>
+            <Progress title={title} progress={progress} totalPage={totalPage} leftTime={leftTime} loading={loading} />
+            <Result finishMessage={finishMessage} pdfMessage={pdfMessage} isDownloading={isDownloading} />
+            <DownloadButton loading={loading} leftTime={leftTime} isDownloading={isDownloading} handleCancel={handleCancel} handleDownload={handleDownload} maxPage={totalPage} startPage={startPage} />
+          </>
+        )
+      }
+    </>
   );
 }

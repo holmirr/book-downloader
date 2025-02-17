@@ -1,7 +1,6 @@
 import { MyFetch } from "./utils/network";
 import * as cheerio from "cheerio";
-import { saveImage, createPDF } from "./utils/files";
-import { storeBooks } from "./utils/database";
+import { saveImage, createPDF, saveBookId } from "./utils/files";
 import { InitInfo } from "./types";
 
 export async function getTitleAndId(url: string) {
@@ -38,7 +37,6 @@ export async function getInit(id: string, token: string): Promise<InitInfo> {
         "Authorization": `Bearer ${token}`
       }
     });
-
     return await response.json();
 
   } catch (error) {
@@ -130,6 +128,7 @@ export async function getBook(abortController: AbortController, _title: string, 
       await new Promise(resolve => setTimeout(resolve, 3000));
       let isFirstRequest = true;
       const errorCount: { [key: number]: number } = {};
+      saveBookId(title, id);
       while (startPage <= maxPage) {
 
         try {
@@ -145,7 +144,7 @@ export async function getBook(abortController: AbortController, _title: string, 
           const data: { image: string } = await response.json();
 
           const base64image = data.image;
-          saveImage(base64image, title, currentPage, currentPage !== 1);
+          saveImage(base64image, title, currentPage, currentPage % 2 === 0);
           controller?.enqueue(encode({ type: "image", page: currentPage }));
           console.log(currentPage, "download success");
 
@@ -154,7 +153,11 @@ export async function getBook(abortController: AbortController, _title: string, 
             isFirstRequest = false;
             startPage = startPage === 1 ? 2 : startPage;
           } else if (currentPage < maxPage) {
-            startPage += 2;
+            if (currentPage % 2 === 1) {
+              startPage += 1;
+            } else {
+              startPage += 2;
+            }
           } else {
             startPage++;
           }
@@ -191,11 +194,6 @@ export async function getBook(abortController: AbortController, _title: string, 
 
     finally {
       startPage--;
-      if (startPage >= maxPage) {
-        storeBooks(title, id, maxPage, true);
-      } else {
-        storeBooks(title, id, startPage, false);
-      }
     }
   }
   await fetchImage();
