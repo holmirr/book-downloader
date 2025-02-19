@@ -1,8 +1,7 @@
 import { MyFetch } from "./utils/network";
 import * as cheerio from "cheerio";
-import { saveImage, createPDF, saveBookId } from "./utils/files";
 import { InitInfo } from "./types";
-
+import { saveImage, saveBookId } from "./utils/strage";
 export async function getTitleAndId(url: string) {
   try {
     const response = await fetch(url);
@@ -128,15 +127,14 @@ export async function getBook(abortController: AbortController, _title: string, 
       await new Promise(resolve => setTimeout(resolve, 3000));
       let isFirstRequest = true;
       const errorCount: { [key: number]: number } = {};
-      saveBookId(title, id);
+      await saveBookId(title, id);
       while (startPage <= maxPage) {
-
         try {
           const currentPage = isFirstRequest ? 1 : startPage;
           let url = "";
-          if (currentPage % 2 === 1 || currentPage === maxPage){
+          if (currentPage % 2 === 1 || currentPage === maxPage) {
             url = `https://api.m2plus.com/api/v1/book/${id}/trial/get/${currentPage}`;
-          } else{
+          } else {
             url = `https://api.m2plus.com/api/v1/book/${id}/trial/get/${currentPage}:${currentPage + 1}`;
           }
           console.log(`page=${currentPage}`);
@@ -144,7 +142,7 @@ export async function getBook(abortController: AbortController, _title: string, 
           const data: { image: string } = await response.json();
 
           const base64image = data.image;
-          saveImage(base64image, title, currentPage, currentPage % 2 === 0);
+          saveImage(base64image, title, currentPage, (currentPage % 2 === 0) && (currentPage < maxPage));
           controller?.enqueue(encode({ type: "image", page: currentPage }));
           console.log(currentPage, "download success");
 
@@ -177,9 +175,6 @@ export async function getBook(abortController: AbortController, _title: string, 
               controller?.enqueue(encode({ type: "finish", reason: "imageError" }));
               abortController.abort();
               return;
-
-
-
             }
             await new Promise(resolve => setTimeout(resolve, 100));
             continue;
@@ -201,20 +196,20 @@ export async function getBook(abortController: AbortController, _title: string, 
 }
 
 
-async function test() {
-  const { m3login, getToken } = await import("./utils/loginUtil");
+// async function test() {
+//   const { m3login, getToken } = await import("./utils/loginUtil");
 
 
-  const client = MyFetch.createPC();
-  const { token: { idToken } } = await getToken(client, await m3login(client, "holmirr707@gmail.com", "nnb0427T!"));
-  const { title, id } = await getTitleAndId("https://www.m2plus.com/content/6816?referrer1Name=%E3%82%B7%E3%83%8A%E3%82%B8%E3%83%BC&referrer1To=%2Fsearch%3Fp%3D24&eop_source_page=m2plus_3.0&eop_source_content=contents_item_img");
+//   const client = MyFetch.createPC();
+//   const { token: { idToken } } = await getToken(client, await m3login(client, "holmirr707@gmail.com", "nnb0427T!"));
+//   const { title, id } = await getTitleAndId("https://www.m2plus.com/content/6816?referrer1Name=%E3%82%B7%E3%83%8A%E3%82%B8%E3%83%BC&referrer1To=%2Fsearch%3Fp%3D24&eop_source_page=m2plus_3.0&eop_source_content=contents_item_img");
 
-  const init = await getInit(id, idToken);
-  console.log(init);
+//   const init = await getInit(id, idToken);
+//   console.log(init);
 
-  const endPage = await getBook(new AbortController(), title, id, idToken, init.timeleft, init.total_images, Math.floor((init.total_images - 5) / 2) * 2);
-  console.log("endpage", endPage);
-  if (endPage >= init.total_images) {
-    createPDF(title);
-  }
-}
+//   const endPage = await getBook(new AbortController(), title, id, idToken, init.timeleft, init.total_images, Math.floor((init.total_images - 5) / 2) * 2);
+//   console.log("endpage", endPage);
+//   if (endPage >= init.total_images) {
+//     createAndUploadPDF(title);
+//   }
+// }

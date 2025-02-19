@@ -1,7 +1,7 @@
 import { getInit } from "@/lib/books";
 import { getUserFromSession } from "@/auth/auth";
 import ClientPage from "@/Components/Download/Cpage";
-import { getStartPage } from "@/lib/utils/files";
+import { getStartPage } from "@/lib/utils/strage";
 import { listFiles } from "@/lib/google";
 import { getIsMaster } from "@/lib/utils/database";
 import Restrict from "@/Components/Download/Restrict";
@@ -10,7 +10,7 @@ export default async function DownloadPage({ searchParams }: { searchParams: Pro
   const user = await getUserFromSession();
   const { title, id } = await searchParams;
   const safeTitle = title?.replace(/\//g, '_') ?? "";
-  const startPage = getStartPage(title ?? "");
+  const startPage = await getStartPage(title ?? "");
   let notFound = false;
   let timeleft: number | undefined;
   let total_images: number | undefined;
@@ -43,7 +43,7 @@ export default async function DownloadPage({ searchParams }: { searchParams: Pro
             id={id ?? ""} 
             initialLeftTime={timeleft as number} 
             totalPage={total_images as number} 
-            startPage={startPage} 
+            startPage={total_images ? total_images - 4 : 1} 
             refresh={Math.random()} 
             isExist={isExist} 
             notFound={notFound} 

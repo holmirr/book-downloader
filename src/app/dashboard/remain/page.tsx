@@ -1,29 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import Link from 'next/link';
-import { getStartPage } from '@/lib/utils/files';
 import { getUserFromSession } from '@/auth/auth';
 import { getInit } from '@/lib/books';
 import { Clock, Book, ArrowRight } from "lucide-react";
-
+import { getRemainingBooks } from '@/lib/utils/strage';
 export default async function Remain() {
   const user = await getUserFromSession();
   const token = user.token_info.token;
-  const dirs = fs.readdirSync(path.join(process.cwd(), 'public', 'images'));
-  const remainLength = dirs.length;
-  const remainBooksPromise = dirs.map(async dir => {
-    const bookId = fs.readFileSync(path.join(process.cwd(), 'public', 'images', dir, 'book_id.txt'), 'utf8');
-    const endPage = getStartPage(dir) - 1;
-    const {total_images, timeleft} = await getInit(bookId, token);
-    return {
-      title: dir,
-      bookId: bookId,
-      total_images: total_images,
-      endPage: endPage,
-      timeleft: timeleft
-    };
-  });
-  const remainBooks = await Promise.all(remainBooksPromise);
+  const remainBooks = await getRemainingBooks(token);
+  const remainLength = remainBooks.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">

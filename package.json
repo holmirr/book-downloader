@@ -11,9 +11,11 @@
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.2",
     "@shadcn/ui": "^0.0.4",
+    "@supabase/supabase-js": "^2.48.1",
     "cheerio": "^1.0.0",
     "clsx": "^2.1.1",
     "crypto": "^1.0.1",
+    "dotenv": "^16.4.7",
     "fetch-cookie": "^3.1.0",
     "google-auth-library": "^9.15.1",
     "googleapis": "^144.0.0",

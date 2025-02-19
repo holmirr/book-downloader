@@ -138,11 +138,13 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
       <URLform setLoading={setLoading} loading={loading} setFinishMessage={setFinishMessage} setPdfMessage={setPdfMessage} />
       {isExist ? (
         <div>
+          <p>{title}</p>
           <p>ダウンロード済みです</p>
         </div>
       ) :
         notFound ? (
           <div>
+            <p>{title}</p>
             <p>立ち読みが提供されていません</p>
           </div >
         ) : (

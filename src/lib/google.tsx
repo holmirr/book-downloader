@@ -1,7 +1,8 @@
 import { google } from "googleapis";
 import { Credentials, OAuth2Client } from "google-auth-library";
-import { promises as fs, createReadStream } from "fs";
+import { promises as fs } from "fs";
 import path from "path";
+import { Readable } from "stream";
 
 const TOKEN_PATH = path.join(process.cwd(), "token.json");
 
@@ -75,23 +76,22 @@ export async function listFiles() {
   }
 }
 
-export async function uploadFile(filePath: string) {
+export async function uploadPDFBuffer(pdfBuffer: Buffer, fileName: string) {
   try {
     const drive = await getDriveClient();
-    console.log(process.env.GOOGLE_PARENT_FOLDER_ID);
     const response = await drive.files.create({
       requestBody: {
-        name: path.basename(filePath),
+        name: `${fileName}.pdf`,
         parents: [process.env.GOOGLE_PARENT_FOLDER_ID as string],
       },
       media: {
         mimeType: "application/pdf",
-        body: createReadStream(filePath),
+        body: Readable.from(pdfBuffer)
       },
     });
     return response.data;
   } catch (error) {
-    console.error("Error uploading file:", error);
+    console.error("Error uploading PDF buffer:", error);
     throw error;
   }
 }

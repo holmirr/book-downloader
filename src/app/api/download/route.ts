@@ -1,8 +1,8 @@
 import { getBook } from "@/lib/books";
-import { createPDF, deleteImage, deletePDF } from "@/lib/utils/files";
+import { createAndUploadPDF} from "@/lib/utils/pdf";
+import { deleteImage } from "@/lib/utils/strage";
 import { getUserFromSession } from "@/auth/auth";
 import { getInit } from "@/lib/books";
-import { uploadFile } from "@/lib/google";
 import { updateUser } from "@/lib/utils/database";
 function encode(data: any) {
   const encoder = new TextEncoder();
@@ -28,10 +28,8 @@ export async function GET(request: Request): Promise<Response> {
       if (endPage >= total_images) {
         try {
           controller.enqueue(encode({ type: "pdf", reason: "start" }));
-          const pdfPath = await createPDF(title);
-          await uploadFile(pdfPath);
+          await createAndUploadPDF(title);
           await deleteImage(title);
-          await deletePDF(title);
           await updateUser(user.email, { download_at: new Date() });
           controller.enqueue(encode({ type: "pdf", reason: "success" }));
         } catch (error) {
