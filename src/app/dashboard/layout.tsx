@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { signOut } from "@/auth/auth";
 import { updateUser } from "@/lib/utils/database";
 import { isValidToken } from "@/lib/utils/time";
