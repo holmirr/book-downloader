@@ -39,6 +39,7 @@ export async function GET(request: Request): Promise<Response> {
           await deleteImage(title);
           await updateUser(user.email, { download_at: new Date() });
           controller.enqueue(encode({ type: "pdf", reason: "success" }));
+          console.log(request.signal.aborted);
         } catch (error) {
           console.error("PDF作成エラー", error);
           controller.enqueue(encode({ type: "pdf", reason: "error" }));
@@ -50,6 +51,7 @@ export async function GET(request: Request): Promise<Response> {
     cancel() {
       console.log("readable stream cancel block")
       abortController.abort();
+      console.log(request.signal.aborted);
     }
   });
 
