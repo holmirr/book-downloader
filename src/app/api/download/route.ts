@@ -24,6 +24,11 @@ export async function GET(request: Request): Promise<Response> {
   // ReadableStream を作成して、SSE 用のストリームにする
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      request.signal.addEventListener("abort", () => {
+        console.log("request abort block")
+        abortController.abort();
+        controller.close();
+      });
       const endPage = await getBook(abortController, title, id, token, timeleft, total_images, startPage, controller);
       if (endPage >= total_images) {
         try {
