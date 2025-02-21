@@ -159,7 +159,7 @@ export async function getBook(abortController: AbortController, _title: string, 
           } else {
             startPage++;
           }
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 300));
 
         } catch (error) {
           if ((error as Error).name === "AbortError") {
@@ -176,7 +176,7 @@ export async function getBook(abortController: AbortController, _title: string, 
               abortController.abort();
               return;
             }
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 300));
             continue;
 
           }

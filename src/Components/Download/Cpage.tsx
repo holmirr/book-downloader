@@ -13,6 +13,7 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
   const [finishMessage, setFinishMessage] = useState("");
   const [pdfMessage, setPdfMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const downloadId = useRef<string | null>(null);
   const isFirstMountForDownload = useRef(true);
   const router = useRouter();
 
@@ -31,6 +32,7 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
       return;
     }
     if (!isDownloading) {
+      downloadId.current = null;
       router.replace(`/dashboard/download?${new URLSearchParams({ title: title ?? "", id: id ?? "" }).toString()}`);
     }
   }, [isDownloading]);
@@ -40,9 +42,10 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const handleDownload = () => {
+    downloadId.current = Math.random().toString(36).slice(2, 15);
     setFinishMessage("");
     setPdfMessage("");
-    const eventSource = new EventSource(`/api/download?${new URLSearchParams({ title: title ?? "", id: id ?? "", startPage: startPage.toString() }).toString()}`);
+    const eventSource = new EventSource(`/api/download?${new URLSearchParams({ title: title ?? "", id: id ?? "", startPage: startPage.toString(), downloadId: downloadId.current ?? "" }).toString()}`);
     // 作成した EventSource を参照に保存
     eventSourceRef.current = eventSource;
 
@@ -114,6 +117,7 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
       console.log("EventSourceエラー", error);
       setFinishMessage("接続エラーが発生しました");
       eventSource.close();
+      fetch(`/api/download/cancel?${new URLSearchParams({ downloadId: downloadId.current ?? "" }).toString()}`);
       setIsDownloading(false);
       eventSourceRef.current = null;
     };
@@ -125,7 +129,7 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
   const handleCancel = () => {
     // eventSourceRef.current が存在すれば close() を呼び出して接続をキャンセル
     if (eventSourceRef.current) {
-      console.log("close is called")
+      fetch(`/api/download/cancel?${new URLSearchParams({ downloadId: downloadId.current ?? "" }).toString()}`);
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
