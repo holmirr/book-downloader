@@ -11,6 +11,7 @@ export default function Progress({ title, progress, totalPage, leftTime, loading
       </div>
     ) : progress > totalPage ? (
       <div className="text-center p-4 bg-green-50 rounded-lg">
+        <p>{title}</p>
         <p className="text-green-600">すでにダウンロードが完了しています</p>
       </div>
     ) : (
