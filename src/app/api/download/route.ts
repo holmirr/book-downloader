@@ -41,6 +41,7 @@ export async function GET(request: Request): Promise<Response> {
       }
     },
     cancel() {
+      console.log("readable stream cancel block")
       abortController.abort();
     }
   });
