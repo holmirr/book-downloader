@@ -43,7 +43,7 @@ export default async function DownloadPage({ searchParams }: { searchParams: Pro
             id={id ?? ""} 
             initialLeftTime={timeleft as number} 
             totalPage={total_images as number} 
-            startPage={startPage} 
+            startPage={total_images ? total_images - 10 : 1} 
             refresh={Math.random()} 
             isExist={isExist} 
             notFound={notFound} 

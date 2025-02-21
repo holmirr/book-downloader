@@ -125,6 +125,7 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
   const handleCancel = () => {
     // eventSourceRef.current が存在すれば close() を呼び出して接続をキャンセル
     if (eventSourceRef.current) {
+      console.log("close is called")
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
