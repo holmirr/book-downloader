@@ -21,6 +21,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const { total_images, timeleft } = await getInit(id, token);
   const abortController = new AbortController();
+  console.log(request.signal.aborted);
   // ReadableStream を作成して、SSE 用のストリームにする
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -29,6 +30,7 @@ export async function GET(request: Request): Promise<Response> {
         abortController.abort();
         controller.close();
       });
+      console.log(request.signal.aborted);
       const endPage = await getBook(abortController, title, id, token, timeleft, total_images, startPage, controller);
       if (endPage >= total_images) {
         try {
