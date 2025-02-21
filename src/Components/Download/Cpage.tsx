@@ -98,13 +98,11 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
             case "success":
               setPdfMessage("PDF作成完了しました");
               setIsDownloading(false);
-              eventSource.close();
               eventSourceRef.current = null;
               break;
             case "error":
               setPdfMessage("PDF作成エラーです");
               setIsDownloading(false);
-              eventSource.close();
               eventSourceRef.current = null;
               break;
           }
@@ -115,6 +113,7 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
     eventSource.onerror = (error) => {
       console.log("EventSourceエラー", error);
       setFinishMessage("接続エラーが発生しました");
+      eventSource.close();
       setIsDownloading(false);
       eventSourceRef.current = null;
     };

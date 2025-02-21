@@ -17,7 +17,7 @@ export default function Dashboard() {
         </div>
 
         <a 
-          href="https://accounts.google.com/Login?hl=ja&service=writely&lp=1"
+          href="https://drive.google.com/drive/my-drive"
           className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-xl text-center transition duration-300 text-sm sm:text-base w-full"
           target="_blank"
           rel="noopener noreferrer"

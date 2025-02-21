@@ -17,7 +17,7 @@ export default function URLform({setLoading, loading, setFinishMessage, setPdfMe
 
   useEffect(() => {
     // 初回マウント時は実行しない
-    if (urlActionState.message === "") return;
+    if (!urlActionState || urlActionState.message === "") return;
     setFinishMessage("");
     setPdfMessage("");
 

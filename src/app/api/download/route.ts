@@ -35,17 +35,14 @@ export async function GET(request: Request): Promise<Response> {
         } catch (error) {
           console.error("PDF作成エラー", error);
           controller.enqueue(encode({ type: "pdf", reason: "error" }));
+        } finally {
+          controller.close();
         }
       }
-
-
-
     },
     cancel() {
       abortController.abort();
     }
-
-
   });
 
   return new Response(stream, {

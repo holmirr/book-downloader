@@ -12,10 +12,6 @@ const oauth2Client = new OAuth2Client({
 
 export async function ensureValidTokens() {
   const tokens = await getGoogleTokens();
-  console.log(`
-    tokensType: ${typeof tokens}
-    tokens: ${JSON.stringify(tokens)}
-  `)
   if (!tokens) {
     throw new Error("No tokens found");
   }
