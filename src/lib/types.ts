@@ -66,4 +66,3 @@ export interface DBBook {
   page: number;
   complete: boolean;
 }
-

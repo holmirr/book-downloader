@@ -1,5 +1,7 @@
 import postgres from "postgres";
-import { DBUser, DBJsonUser, TokenInfo, DBBook } from "@/lib/types";
+import { DBUser, DBJsonUser, TokenInfo, DBBook} from "@/lib/types";
+import { Credentials } from "google-auth-library";
+
 const sql = postgres(process.env.POSTGRES_URL!, {
   ssl: "require", 
 });
@@ -19,6 +21,10 @@ export async function createTable() {
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       master BOOLEAN DEFAULT FALSE
+    )`;
+    await sql`CREATE TABLE IF NOT EXISTS google_tokens (
+      id SERIAL PRIMARY KEY,
+      tokens JSONB NOT NULL
     )`;
 
     console.log("created table");
@@ -110,9 +116,35 @@ export async function getIsMaster(name: string) {
   }
 }
 
+export async function getGoogleTokens() : Promise<Credentials | null> { 
+  interface dbGoogleTokens {
+    tokens: string;
+    id: number;
+  }
+  try {
+    const tokens = await sql<dbGoogleTokens[]>`SELECT * FROM google_tokens`;
+    if (tokens.length === 0) {
+      return null;
+    }
+    else {
+      return JSON.parse(tokens[0].tokens) as Credentials;
+    }
+  } catch (e) {
+    console.log("Googleトークン取得エラー");
+    throw e;
+  }
+}
 
-
-
-
-
+export async function saveGoogleTokens(tokens: Credentials) {
+  try {
+    await sql`
+      INSERT INTO google_tokens (id, tokens)
+      VALUES (1, ${JSON.stringify(tokens)})
+      ON CONFLICT (id) 
+      DO UPDATE SET tokens = ${JSON.stringify(tokens)}`;
+  } catch (e) {
+    console.log("Googleトークン保存エラー");
+    throw e;
+  }
+}
 
