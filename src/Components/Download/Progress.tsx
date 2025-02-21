@@ -2,6 +2,7 @@
 
 export default function Progress({ title, progress, totalPage, leftTime, loading }: { title: string, progress: number, totalPage: number, leftTime: number, loading: boolean }) {
   const percentage = Math.round((progress / totalPage) * 100);
+  console.log(`progress: ${progress}, totalPage: ${totalPage}, percentage: ${percentage}`)
 
   return (
     loading ? (
