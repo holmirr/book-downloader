@@ -9,6 +9,7 @@ export async function createAndUploadPDF(title: string) {
     const safeTitle = safeFileName(title);
     const dirPath = `images/${safeTitle}`;
     const pdfDoc = await PDFDocument.create();
+    console.log("pdfDoc 作成")
     
     // Supabaseからファイル一覧を取得
     const { data: files, error } = await supabase.storage
@@ -16,7 +17,7 @@ export async function createAndUploadPDF(title: string) {
       .list(dirPath);
     
     if (error) throw error;
-
+    console.log("strageからfiles名取得")
     // PNGファイルをフィルタリングしてソート
     const pngFiles = files
       .filter(file => file.name.endsWith('.png'))
@@ -38,15 +39,18 @@ export async function createAndUploadPDF(title: string) {
         .download(filePath);
 
       if (downloadError) throw downloadError;
+      console.log("strageから画像取得", fileName)
 
       // 画像をバッファに変換
       const imageBuffer = Buffer.from(await imageData.arrayBuffer());
+      console.log("画像バッファ変換", fileName)
 
       if (pages.length > 1) {
         // 見開きページの場合、画像を半分に分割
         const metadata = await sharp(imageBuffer).metadata();
         const width = metadata.width || 0;
         const height = metadata.height || 0;
+        console.log("画像メタデータ取得", fileName)
 
         // 左ページ
         const leftPage = await sharp(imageBuffer)
@@ -94,14 +98,16 @@ export async function createAndUploadPDF(title: string) {
           height: image.height,
         });
       }
+      console.log("画像追加", fileName)
     }
-
+    console.log("画像追加完了")
     // PDFバッファを生成して直接アップロード
     const pdfBytes = await pdfDoc.save();
     const pdfBuffer = Buffer.from(pdfBytes);
     
     // Google Driveにアップロード
     const uploadTitle = title.replace(/\//g, '_');
+    console.log("driveにアップロード", uploadTitle)
     const uploadedFile = await uploadPDFBuffer(pdfBuffer, uploadTitle);
     return uploadedFile;
     
