@@ -20,12 +20,6 @@ export async function POST(request: Request): Promise<Response> {
   console.log("endPage:", endPage);
   if (endPage >= total_images) {
     try {
-      pusher.trigger(downloadId, "download", { type: "pdf", reason: "start" });
-      console.log("pdf start")
-      await createAndUploadPDF(title);
-      console.log("pdf success")
-      await deleteImage(title);
-      console.log("deleteImage")
       await updateUser(user.email, { download_at: new Date() });
       console.log("updateUser")
       pusher.trigger(downloadId, "download", { type: "pdf", reason: "success" });

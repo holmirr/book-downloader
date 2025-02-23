@@ -17,6 +17,7 @@ export async function createAndUploadPDF(title: string) {
       .list(dirPath);
     
     if (error) throw error;
+    if (files.length === 0) throw new Error('PNGファイルが見つかりません');
     console.log("strageからfiles名取得")
     // PNGファイルをフィルタリングしてソート
     const pngFiles = files
@@ -27,6 +28,7 @@ export async function createAndUploadPDF(title: string) {
         const numB = parseInt(b.split('.')[0].split('_')[0]);
         return numA - numB;
       });
+    if (pngFiles.length === 0) throw new Error('PNGファイルが見つかりません');
 
     // 署名付きURLを一括で取得
     const signedUrls = await Promise.all(

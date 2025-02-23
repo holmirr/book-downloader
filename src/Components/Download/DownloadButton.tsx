@@ -1,6 +1,6 @@
 "use client";
 
-export default function DownloadButton({ isDownloading, handleCancel, handleDownload, leftTime, loading, maxPage, startPage, isCanceling, setIsCanceling }: { isDownloading: boolean, handleCancel: () => void, handleDownload: () => void, leftTime: number, loading: boolean, maxPage: number, startPage: number, isCanceling: boolean, setIsCanceling: (isCanceling: boolean) => void }) {
+export default function DownloadButton({ isDownloading, handleCancel, handleDownload, handlePDF, leftTime, loading, maxPage, isCanceling, canPdf, pdfLoading }: { isDownloading: boolean, handleCancel: () => void, handleDownload: () => void, handlePDF: () => void, leftTime: number, loading: boolean, maxPage: number, isCanceling: boolean, canPdf: boolean, pdfLoading: boolean }) {
   if (loading) {
     return null;
   }
@@ -8,6 +8,7 @@ export default function DownloadButton({ isDownloading, handleCancel, handleDown
   if (isDownloading) {
     return (
       <button 
+        disabled={isCanceling}
         onClick={handleCancel}
         className="mt-4 w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 text-sm sm:text-base"
       >
@@ -24,14 +25,14 @@ export default function DownloadButton({ isDownloading, handleCancel, handleDown
         )}
       </button>
     )
-  } else if (startPage > maxPage) {
+  } else if (canPdf) {
     return (
       <button 
-        onClick={handleDownload} 
-        disabled={loading}
+        onClick={handlePDF} 
+        disabled={loading || pdfLoading}
         className="mt-4 w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
       >
-        PDFに変換する
+        {pdfLoading ? "PDF作成中..." : "PDFに変換する"}
       </button>
     )
   } else if (leftTime <= 0) {

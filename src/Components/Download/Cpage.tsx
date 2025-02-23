@@ -14,7 +14,9 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
   const [leftTime, setLeftTime] = useState(initialLeftTime);
   const [finishMessage, setFinishMessage] = useState("");
   const [pdfMessage, setPdfMessage] = useState("");
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [canPdf, setCanPdf] = useState(startPage > totalPage);
   const [downloadId, setDownloadId] = useState<string | null>(null);
   const [isCanceling, setIsCanceling] = useState(false);
   const isFirstMountForDownload = useRef(true);
@@ -88,25 +90,11 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
                   break;
                 case "complete":
                   setFinishMessage("ダウンロード完了しました");
-                  break;
-              }
-            case "pdf":
-              switch (data.reason) {
-                case "start":
-                  setPdfMessage("PDF作成中です");
-                  break;
-                case "success":
-                  setPdfMessage("PDF作成完了しました");
-                  setIsDownloading(false);
-                  setDownloadId(null);
-                  break;
-                case "error":
-                  setPdfMessage("PDF作成エラーです");
+                  setCanPdf(true);
                   setIsDownloading(false);
                   setDownloadId(null);
                   break;
               }
-              break;
           }
         } catch (error) {
           console.error("Pusherメッセージ処理エラー:", error);
@@ -162,6 +150,24 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
     setIsCanceling(false);
   };
 
+  const handlePDF = async () => {
+    setPdfLoading(true);
+    setPdfMessage("PDF作成中です");
+    const res = await fetch(`/api/pdf`,
+      {
+        method: "POST",
+        body: JSON.stringify({ title: title })
+      }
+    );
+    if (!res.ok) {
+      setPdfMessage("PDF作成に失敗しました");
+    } else {
+      setPdfMessage("PDF作成完了しました");
+      setCanPdf(false);
+    }
+    setPdfLoading(false);
+  };
+
   return (
     <>
       <URLform setLoading={setLoading} loading={loading} setFinishMessage={setFinishMessage} setPdfMessage={setPdfMessage} />
@@ -180,7 +186,7 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
           <>
             <Progress title={title} progress={progress} totalPage={totalPage} leftTime={leftTime} loading={loading} />
             <Result finishMessage={finishMessage} pdfMessage={pdfMessage} isDownloading={isDownloading} />
-            <DownloadButton loading={loading} leftTime={leftTime} isDownloading={isDownloading} handleCancel={handleCancel} handleDownload={handleDownload} maxPage={totalPage} startPage={startPage} isCanceling={isCanceling} setIsCanceling={setIsCanceling}/>
+            <DownloadButton loading={loading} leftTime={leftTime} isDownloading={isDownloading} handleCancel={handleCancel} handleDownload={handleDownload} handlePDF={handlePDF} maxPage={totalPage} isCanceling={isCanceling} canPdf={canPdf} pdfLoading={pdfLoading} />
           </>
         )
       }
