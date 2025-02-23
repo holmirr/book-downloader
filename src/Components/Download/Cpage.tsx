@@ -121,8 +121,6 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
       setIsDownloading(false);
       eventSourceRef.current = null;
     };
-
-
     setIsDownloading(true);
   };
 
