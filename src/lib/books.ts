@@ -2,6 +2,8 @@ import { MyFetch } from "./utils/network";
 import * as cheerio from "cheerio";
 import { InitInfo } from "./types";
 import { saveImage, saveBookId } from "./utils/strage";
+import Pusher from "pusher";
+
 export async function getTitleAndId(url: string) {
   try {
     const response = await fetch(url);
@@ -44,17 +46,11 @@ export async function getInit(id: string, token: string): Promise<InitInfo> {
   }
 }
 
-export async function getBook(abortController: AbortController, _title: string, _id: string, token: string, leftTime: number, _maxPage: number, startPage: number = 1, controller?: ReadableStreamController<Uint8Array>) {
+export async function getBook(abortController: AbortController, _title: string, _id: string, token: string, leftTime: number, _maxPage: number, startPage: number = 1, pusher: Pusher, downloadId: string) {
   leftTime -= 3;
   const title = _title;
   const id = _id;
   const maxPage = _maxPage;
-
-  const encode = (data: any) => {
-    const encoder = new TextEncoder();
-    return encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
-  }
-
 
   const client = new MyFetch({
     headers: {
@@ -89,14 +85,29 @@ export async function getBook(abortController: AbortController, _title: string, 
       }
 
       const response = await client.post(`https://api.m2plus.com/api/v1/book/${id}/trial/time`, { json: data });
-      controller?.enqueue(encode({ type: "timeleft", timeleft: leftTime }));
       console.log(leftTime, response.status);
+      const pusherResponse = await pusher.trigger(downloadId, "download",
+        { type: "timeleft", timeleft: leftTime },
+        {
+          info: "subscription_count,user_count"
+        }
+      );
+      const userCount = (await pusherResponse.json()).channels[downloadId].subscription_count;
+      console.log("userCount:", userCount);
+      
+      if (userCount === 0) {
+        console.log("pusherのリスナーがいなくなりました");
+        abortController.abort();
+        pusher.trigger(downloadId, "download", { type: "finish", reason: "cancel" });
+        clearInterval(fetchInterval);
+      }
+
       leftTime = leftTime - 3;
 
 
       if (leftTime <= 0) {
         abortController.abort();
-        controller?.enqueue(encode({ type: "finish", reason: "timeup" }));
+        pusher.trigger(downloadId, "download", { type: "finish", reason: "timeup" });
         clearInterval(fetchInterval);
       }
 
@@ -108,12 +119,12 @@ export async function getBook(abortController: AbortController, _title: string, 
         clearInterval(fetchInterval);
       } else {
         console.log(`${leftTime}秒\n`, "インターバルエラー", error);
-        controller?.enqueue(encode({ type: "timeleftError", timeleft: leftTime }));
+        pusher.trigger(downloadId, "download", { type: "timeleftError", timeleft: leftTime });
         errorCount[leftTime] = (errorCount[leftTime] ?? 0) + 1;
         if (errorCount[leftTime] >= 3) {
 
           console.log(`${leftTime}秒\n`, "インターバルエラー", "連続3回エラー");
-          controller?.enqueue(encode({ type: "finish", reason: "timeleftError" }));
+          pusher.trigger(downloadId, "download", { type: "finish", reason: "timeleftError" });
           abortController.abort();
           clearInterval(fetchInterval);
 
@@ -143,7 +154,7 @@ export async function getBook(abortController: AbortController, _title: string, 
 
           const base64image = data.image;
           saveImage(base64image, title, currentPage, (currentPage % 2 === 0) && (currentPage < maxPage));
-          controller?.enqueue(encode({ type: "image", page: currentPage }));
+          pusher.trigger(downloadId, "download", { type: "image", page: currentPage });
           console.log(currentPage, "download success");
 
 
@@ -168,11 +179,11 @@ export async function getBook(abortController: AbortController, _title: string, 
           } else {
             errorCount[startPage] = (errorCount[startPage] ?? 0) + 1;
             console.log(`${startPage}ページ\n`, "画像取得エラー", error);
-            controller?.enqueue(encode({ type: "imageError", page: startPage }));
+            pusher.trigger(downloadId, "download", { type: "imageError", page: startPage });
 
             if (errorCount[startPage] >= 3) {
               console.log(`${startPage}ページ\n`, "画像取得エラー", "連続3回エラー");
-              controller?.enqueue(encode({ type: "finish", reason: "imageError" }));
+              pusher.trigger(downloadId, "download", { type: "finish", reason: "imageError" });
               abortController.abort();
               return;
             }
@@ -183,8 +194,11 @@ export async function getBook(abortController: AbortController, _title: string, 
 
         }
       }
+      console.log("fetchImage finish");
       abortController.abort();
-      controller?.enqueue(encode({ type: "finish", reason: "complete" }));
+      console.log("abortController.abort()");
+      pusher.trigger(downloadId, "download", { type: "finish", reason: "complete" });
+      console.log("pusher.trigger(downloadId, \"download\", { type: \"finish\", reason: \"complete\" });");
     }
 
     finally {
