@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAndUploadPDF } from "@/lib/utils/pdf";
 import { deleteImage } from "@/lib/utils/strage";
-import { updateUser } from "@/lib/utils/database";
 
 export async function POST(request: NextRequest) {
   const { title } = await request.json();

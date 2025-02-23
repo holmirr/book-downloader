@@ -22,12 +22,8 @@ export async function POST(request: Request): Promise<Response> {
     try {
       await updateUser(user.email, { download_at: new Date() });
       console.log("updateUser")
-      pusher.trigger(downloadId, "download", { type: "pdf", reason: "success" });
-      console.log("pusher.trigger(downloadId, \"download\", { type: \"pdf\", reason: \"success\" });")
     } catch (error) {
-      console.error("PDF作成エラー", error);
-      pusher.trigger(downloadId, "download", { type: "pdf", reason: "error" });
-      console.log("pusher.trigger(downloadId, \"download\", { type: \"pdf\", reason: \"error\" });")
+      console.error("ダウンロード時間更新エラー", error);
     } 
   }
   return new Response("finished");
