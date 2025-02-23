@@ -28,29 +28,37 @@ export async function createAndUploadPDF(title: string) {
         return numA - numB;
       });
 
-    for (const fileName of pngFiles) {
-      const filePath = `${dirPath}/${fileName}`;
-      const fileNameWithoutExt = fileName.split('.')[0];
-      const pages = fileNameWithoutExt.split('_');
+    // 署名付きURLを一括で取得
+    const signedUrls = await Promise.all(
+      pngFiles.map(fileName => 
+        supabase.storage
+          .from('book-downloader')
+          .createSignedUrl(`${dirPath}/${fileName}`, 60) // 60秒の有効期限
+      )
+    );
+    console.log("すべての署名付きURL取得完了")
 
-      // Supabaseから画像をダウンロード
-      const { data: imageData, error: downloadError } = await supabase.storage
-        .from('book-downloader')
-        .download(filePath);
+    // 署名付きURLを使用して並列でダウンロード
+    const imageBuffers = await Promise.all(
+      signedUrls.map(async ({ data }) => {
+        if (!data?.signedUrl) throw new Error('署名付きURL の取得に失敗しました');
+        const response = await fetch(data.signedUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+      })
+    );
+    console.log("すべての画像バッファ取得完了")
 
-      if (downloadError) throw downloadError;
-      console.log("strageから画像取得", fileName)
-
-      // 画像をバッファに変換
-      const imageBuffer = Buffer.from(await imageData.arrayBuffer());
-      console.log("画像バッファ変換", fileName)
+    for (let i = 0; i < pngFiles.length; i++) {
+      const imageBuffer = imageBuffers[i];
+      const fileName = pngFiles[i];
+      const pages = fileName.split('.')[0].split('_');
 
       if (pages.length > 1) {
         // 見開きページの場合、画像を半分に分割
         const metadata = await sharp(imageBuffer).metadata();
         const width = metadata.width || 0;
         const height = metadata.height || 0;
-        console.log("画像メタデータ取得", fileName)
 
         // 左ページ
         const leftPage = await sharp(imageBuffer)
@@ -98,7 +106,6 @@ export async function createAndUploadPDF(title: string) {
           height: image.height,
         });
       }
-      console.log("画像追加", fileName)
     }
     console.log("画像追加完了")
     // PDFバッファを生成して直接アップロード
