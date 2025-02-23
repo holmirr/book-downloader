@@ -19,7 +19,10 @@ export default async function DownloadPage({ searchParams }: { searchParams: Pro
   if (!await getIsMaster(user.name)) {
     if (user.download_at) {
       if (Date.now() - user.download_at.getTime() < 1000 * 60 * 60 * 24) {
-        restricted = true;
+        const endPage = startPage - 10;
+        if (endPage < (total_images ?? 0)) {
+          restricted = true;
+        }
       }
     }
   }
