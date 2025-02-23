@@ -164,6 +164,7 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
     } else {
       setPdfMessage("PDF作成完了しました");
       setCanPdf(false);
+      router.replace(`/dashboard/download?${new URLSearchParams({ title: title ?? "", id: id ?? "" }).toString()}`);
     }
     setPdfLoading(false);
   };
