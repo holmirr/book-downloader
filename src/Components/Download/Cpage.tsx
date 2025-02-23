@@ -5,6 +5,8 @@ import URLform from './URLform';
 import Progress from './Progress';
 import Result from './Result';
 import { useRouter } from 'next/navigation';
+import { pusherClient } from '@/lib/pusher/client';
+
 
 export default function ClientPage({ title, id, initialLeftTime, totalPage, startPage = 1, refresh, isExist, notFound }: { title: string, id: string, initialLeftTime: number, totalPage: number, startPage: number, refresh: number, isExist: boolean, notFound: boolean }) {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -13,7 +15,8 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
   const [finishMessage, setFinishMessage] = useState("");
   const [pdfMessage, setPdfMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const downloadId = useRef<string | null>(null);
+  const [downloadId, setDownloadId] = useState<string | null>(null);
+  const [isCanceling, setIsCanceling] = useState(false);
   const isFirstMountForDownload = useRef(true);
   const router = useRouter();
 
@@ -32,109 +35,131 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
       return;
     }
     if (!isDownloading) {
-      downloadId.current = null;
       router.replace(`/dashboard/download?${new URLSearchParams({ title: title ?? "", id: id ?? "" }).toString()}`);
     }
   }, [isDownloading]);
 
+  useEffect(() => {
+    if (downloadId) {
+      pusherClient.subscribe(downloadId);
 
-  // EventSource インスタンスを参照するための useRef を作成
-  const eventSourceRef = useRef<EventSource | null>(null);
+      const handleError = (errorType: string, message: string) => {
+        setFinishMessage("接続エラーが発生しました");
+        setIsDownloading(false);
+        setDownloadId(null);
+      };
 
-  const handleDownload = () => {
-    downloadId.current = Math.random().toString(36).slice(2, 15);
-    setFinishMessage("");
-    setPdfMessage("");
-    const eventSource = new EventSource(`/api/download?${new URLSearchParams({ title: title ?? "", id: id ?? "", startPage: startPage.toString(), downloadId: downloadId.current ?? "" }).toString()}`);
-    // 作成した EventSource を参照に保存
-    eventSourceRef.current = eventSource;
+      pusherClient.bind("error", (error: any) => {
+        console.error("Pusherエラー:", error);
+        handleError("connection", "サーバーとの接続エラーが発生しました");
+      });
 
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      switch (data.type) {
-        case "timeleft":
-          setLeftTime(data.timeleft);
-          break;
-        case "image":
-          setProgress(data.page);
-          break;
-        case "timeleftError":
-          // エラー処理
-          break;
-        case "imageError":
-          // エラー処理
-          break;
-        case "finish":
-          switch (data.reason) {
-            case "timeup":
-              setFinishMessage("時間切れです");
-              setIsDownloading(false);
-
-              eventSource.close();
-              eventSourceRef.current = null;
+      pusherClient.bind("download", (data: any) => {
+        try {
+          switch (data.type) {
+            case "timeleft":
+              setLeftTime(data.timeleft);
+              break;
+            case "image":
+              setProgress(data.page);
               break;
             case "timeleftError":
-
-              setFinishMessage("インターバルエラーです");
-              setIsDownloading(false);
-              eventSource.close();
-              eventSourceRef.current = null;
+              // エラー処理
               break;
-
             case "imageError":
-              setFinishMessage("画像取得エラーです");
-              setIsDownloading(false);
-              eventSource.close();
-              eventSourceRef.current = null;
+              // エラー処理
               break;
+            case "finish":
+              switch (data.reason) {
+                case "timeup":
+                  setFinishMessage("時間切れです");
+                  setIsDownloading(false);
+                  setDownloadId(null);
+                  break;
+                case "timeleftError":
+                  setFinishMessage("インターバルエラーです");
+                  setIsDownloading(false);
+                  setDownloadId(null);
+                  break;
+                case "imageError":
+                  setFinishMessage("画像取得エラーです");
+                  setIsDownloading(false);
+                  setDownloadId(null);
+                  break;
+                case "complete":
+                  setFinishMessage("ダウンロード完了しました");
+                  break;
+              }
+            case "pdf":
+              switch (data.reason) {
+                case "start":
+                  setPdfMessage("PDF作成中です");
+                  break;
+                case "success":
+                  setPdfMessage("PDF作成完了しました");
+                  setIsDownloading(false);
+                  setDownloadId(null);
+                  break;
+                case "error":
+                  setPdfMessage("PDF作成エラーです");
+                  setIsDownloading(false);
+                  setDownloadId(null);
+                  break;
+              }
+              break;
+          }
+        } catch (error) {
+          console.error("Pusherメッセージ処理エラー:", error);
+          handleError("general", "予期せぬエラーが発生しました");
+        }
+      });
+    }
 
-            case "complete":
-              setFinishMessage("ダウンロード完了しました");
-              break;
-          }
-        // 完了時に EventSource を閉じる
-        case "pdf":
-          switch (data.reason) {
-            case "start":
-              setPdfMessage("PDF作成中です");
-              break;
-            case "success":
-              setPdfMessage("PDF作成完了しました");
-              setIsDownloading(false);
-              eventSourceRef.current = null;
-              break;
-            case "error":
-              setPdfMessage("PDF作成エラーです");
-              setIsDownloading(false);
-              eventSourceRef.current = null;
-              break;
-          }
-          break;
+    return () => {
+      if (downloadId) {
+        pusherClient.unsubscribe(downloadId);
+        pusherClient.unbind("download");
+        pusherClient.unbind("error");
       }
-    };
+    }
+  }, [downloadId]);
 
-    eventSource.onerror = (error) => {
-      console.log("EventSourceエラー", error);
-      setFinishMessage("接続エラーが発生しました");
-      eventSource.close();
-      fetch(`/api/download/cancel?${new URLSearchParams({ downloadId: downloadId.current ?? "" }).toString()}`);
-      setIsDownloading(false);
-      eventSourceRef.current = null;
-    };
-
-
+  const handleDownload = async () => {
+    const downloadId = Math.random().toString(36).slice(2, 15);
+    console.log("downloadId:", downloadId);
+    setDownloadId(downloadId);
+    setFinishMessage("");
+    setPdfMessage("");
     setIsDownloading(true);
+    try {
+      const res = await fetch(`/api/download`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            title: title,
+            id: id,
+            startPage: startPage,
+            downloadId: downloadId ?? ""
+          })
+        }
+      );
+      if (!res.ok) {
+        throw new Error("ダウンロードに失敗しました");
+      }
+    } catch (error) {
+      console.error("fetch error:", error);
+      setFinishMessage("サーバー接続が解除されました");
+      setIsDownloading(false);
+      setDownloadId(null);
+    }
   };
 
-  const handleCancel = () => {
-    // eventSourceRef.current が存在すれば close() を呼び出して接続をキャンセル
-    if (eventSourceRef.current) {
-      fetch(`/api/download/cancel?${new URLSearchParams({ downloadId: downloadId.current ?? "" }).toString()}`);
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-    setFinishMessage("ダウンロードがキャンセルされました");
+  const handleCancel = async () => {
+    setIsCanceling(true);
+    setDownloadId(null);
+    await new Promise(resolve => setTimeout(resolve, 3000));
     setIsDownloading(false);
+    setIsCanceling(false);
   };
 
   return (
@@ -155,7 +180,7 @@ export default function ClientPage({ title, id, initialLeftTime, totalPage, star
           <>
             <Progress title={title} progress={progress} totalPage={totalPage} leftTime={leftTime} loading={loading} />
             <Result finishMessage={finishMessage} pdfMessage={pdfMessage} isDownloading={isDownloading} />
-            <DownloadButton loading={loading} leftTime={leftTime} isDownloading={isDownloading} handleCancel={handleCancel} handleDownload={handleDownload} maxPage={totalPage} startPage={startPage} />
+            <DownloadButton loading={loading} leftTime={leftTime} isDownloading={isDownloading} handleCancel={handleCancel} handleDownload={handleDownload} maxPage={totalPage} startPage={startPage} isCanceling={isCanceling} setIsCanceling={setIsCanceling}/>
           </>
         )
       }
