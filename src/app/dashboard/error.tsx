@@ -13,7 +13,7 @@ export default function Error({
     console.error(error);
   }, [error]);
 
-  if (error.message === "refresh token expired") {
+  if (error.message === "refresh token expired" || error.message === "No tokens found") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center p-8 rounded-lg shadow-lg bg-white">
