@@ -8,13 +8,9 @@ const oauth2Client = new OAuth2Client({
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   redirectUri: process.env.GOOGLE_REDIRECT_URI,
 });
-console.log("clientId", process.env.GOOGLE_CLIENT_ID);
-console.log("clientSecret", process.env.GOOGLE_CLIENT_SECRET);
-console.log("redirectUri", process.env.GOOGLE_REDIRECT_URI);
 
 export async function ensureValidTokens() {
   const tokens = await getGoogleTokens();
-  console.log("tokens", tokens);
   if (!tokens) {
     throw new Error("No tokens found");
   }
@@ -22,10 +18,14 @@ export async function ensureValidTokens() {
   const now = new Date();
   if (tokens.expiry_date && now > new Date(tokens.expiry_date)) {
     console.log("current token expired, refreshing");
-    const { credentials } = await oauth2Client.refreshAccessToken();
-    console.log("credentials", credentials);
-    oauth2Client.setCredentials(credentials);
-    await saveGoogleTokens(credentials);
+    try {
+      const { credentials } = await oauth2Client.refreshAccessToken();
+      oauth2Client.setCredentials(credentials);
+      await saveGoogleTokens(credentials);
+    } catch (error) {
+      console.error("Error refreshing tokens:", error);
+      throw new Error("refresh token expired");
+    }
   }
   return oauth2Client;
 }
