@@ -39,11 +39,12 @@ export async function createAndUploadPDF(title: string) {
       )
     );
     console.log("すべての署名付きURL取得完了")
-
+    console.log("length is ", signedUrls.length);
     // 署名付きURLを使用して並列でダウンロード
     const imageBuffers = await Promise.all(
       signedUrls.map(async ({ data }) => {
         if (!data?.signedUrl) throw new Error('署名付きURL の取得に失敗しました');
+        console.log(data.signedUrl);
         const response = await fetch(data.signedUrl);
         const arrayBuffer = await response.arrayBuffer();
         return Buffer.from(arrayBuffer);
