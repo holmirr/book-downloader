@@ -46,7 +46,7 @@ export async function getRemainingBooks(token: string) {
 export async function getStartPage(title: string) {
   const safeTitle = safeFileName(title);
   const folderPath = `images/${safeTitle}`;
-  const { data, error } = await supabase.storage.from(bucketName).list(folderPath);
+  const { data, error } = await supabase.storage.from(bucketName).list(folderPath, {limit:1000});
   if (error) {
     console.error(error);
     throw new Error(error.message);
@@ -118,7 +118,7 @@ export async function deleteImage(title: string) {
 }
 
 export async function getFiles(folderPath: string) {
-  const {data, error} = await supabase.storage.from(bucketName).list(folderPath);
+  const {data, error} = await supabase.storage.from(bucketName).list(folderPath, {limit:1000});
   if (error) {
     console.error(error);
     throw new Error(error.message);
