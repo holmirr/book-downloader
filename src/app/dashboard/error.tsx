@@ -13,7 +13,7 @@ export default function Error({
     console.error(error);
   }, [error]);
 
-  if (error.message === "refresh token expired" || error.message === "No tokens found") {
+          if (error.message === "refresh token expired" || error.message === "No tokens found" || error.message === "An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details. A digest property is included on this error instance which may provide additional details about the nature of the error." ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center p-8 rounded-lg shadow-lg bg-white">
