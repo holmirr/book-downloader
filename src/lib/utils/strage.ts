@@ -65,6 +65,7 @@ export async function getStartPage(title: string) {
     } 
     return result;
   }));
+  console.log("maxPage is", maxPage);
   return maxPage + 1;
 }
 
