@@ -38,7 +38,6 @@ export async function createAndUploadPDF(title: string) {
           .createSignedUrl(`${dirPath}/${fileName}`, 60) // 60秒の有効期限
       )
     );
-    console.log("すべての署名付きURL取得完了")
     console.log("length is ", signedUrls.length);
     // 署名付きURLを使用して並列でダウンロード
     const imageBuffers = await Promise.all(
@@ -46,6 +45,7 @@ export async function createAndUploadPDF(title: string) {
         if (!data?.signedUrl) throw new Error('署名付きURL の取得に失敗しました');
         console.log(data.signedUrl);
         const response = await fetch(data.signedUrl);
+        console.log("download完了");
         const arrayBuffer = await response.arrayBuffer();
         return Buffer.from(arrayBuffer);
       })
