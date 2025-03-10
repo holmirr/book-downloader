@@ -14,7 +14,7 @@ export async function createAndUploadPDF(title: string) {
     // Supabaseからファイル一覧を取得
     const { data: files, error } = await supabase.storage
       .from('book-downloader')
-      .list(dirPath);
+      .list(dirPath, {limit:1000});
     
     if (error) throw error;
     if (files.length === 0) throw new Error('PNGファイルが見つかりません');
