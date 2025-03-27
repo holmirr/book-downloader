@@ -35,7 +35,7 @@ export async function createAndUploadPDF(title: string) {
       pngFiles.map(fileName => 
         supabase.storage
           .from('book-downloader')
-          .createSignedUrl(`${dirPath}/${fileName}`, 60) // 60秒の有効期限
+          .createSignedUrl(`${dirPath}/${fileName}`, 300) // 30秒の有効期限
       )
     );
     console.log("length is ", signedUrls.length);
