@@ -16,10 +16,15 @@ interface MyPostInit extends MyRequestInit {
     urlencoded?: { [key: string]: string };
 }
 
+// デフォルトのinitとcookiejarを持つfetchclient
 export class MyFetch {
+    // デフォルトのinit
     public defaults: MyRequestInit;
+    // クッキーを保存するjar
     public jar: CookieJar;
+    // jarのcookieをheaderに適応するカスタムfetch
     private fetchWithCookies;
+    // モバイル用のMyFetch instanceを生成するstaticメソッド
     static createMobile() {
         return new MyFetch({
             headers: {
@@ -27,6 +32,7 @@ export class MyFetch {
             }
         }, new CookieJar());
     }
+    // PC用のMyFetch instanceを生成するstaticメソッド
     static createPC() {
         return new MyFetch({
             headers: {
@@ -39,7 +45,7 @@ export class MyFetch {
     constructor(defaults?: MyRequestInit, jar?: CookieJar) {
         this.defaults = defaults ?? {};;
         this.jar = jar ?? new CookieJar();
-        // コンストラクタでfetchWithCookiesを初期化
+        // コンストラクタでfetchWithCookiesとcookiejarを結びつける。
         this.fetchWithCookies = fetchCookie(fetch, this.jar);
     }
 
@@ -77,6 +83,7 @@ export class MyFetch {
     }
 
     public async fetch<T = any>(input: RequestInfo, init?: MyRequestInit): Promise<MyResponse<T>> {
+      // デフォルトのinitと引数のinitのマージ
         const headers: HeadersInit = { ...this.defaults.headers, ...init?.headers };
         const mergedInit = {
             ...this.defaults,
@@ -84,9 +91,10 @@ export class MyFetch {
             headers
         };
 
+        // カスタムfetchを実行し、その結果をreturnする。
         const response = await this.fetchWithCookies(input, mergedInit) as MyResponse<T>;
+        // 以下ログ用
         response.request = mergedInit;
-
         if (mergedInit.logMode) {
             console.log("-----------------------------------------------------------------");
             // リクエストヘッダーを取得

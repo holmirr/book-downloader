@@ -1,5 +1,6 @@
 import PusherServer from "pusher";
 
+// サーバーサイドでpusherを使用するためのインスタンスを作成
 let pusherInstance: PusherServer | null = null;
 
 export const getPusherInstance = () => {

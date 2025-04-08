@@ -1,4 +1,5 @@
 export default function Restrict({download_at}: {download_at: Date}) {
+  // 次回ダウンロード可能時間を計算
   const nextDownloadTime = new Date(download_at.getTime() + 1000 * 60 * 60 * 24);
   return (
     <div className="mt-6 p-6 bg-yellow-50 rounded-lg border border-yellow-200">

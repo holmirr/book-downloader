@@ -50,19 +50,10 @@ export interface DBUser {
   download_at: Date | null;
 }
 
-export interface DBJsonUser {
-  id: number;
-  email: string;
-  password: string;
-  name: string;
-  token_info: string;
-  download_at: Date | null;
-}
-
-export interface DBBook {
-  index: number;
+export type RemainBook = {
   title: string;
-  id: string;
-  page: number;
-  complete: boolean;
-}
+  bookId: string;
+  total_images: number;
+  endPage: number;
+  timeleft: number;
+};

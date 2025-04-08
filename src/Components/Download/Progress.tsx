@@ -1,16 +1,11 @@
 "use client";
 
-export default function Progress({ title, progress, totalPage, leftTime, loading }: { title: string, progress: number, totalPage: number, leftTime: number, loading: boolean }) {
+export default function Progress({ title, progress, totalPage, leftTime}: { title: string, progress: number, totalPage: number, leftTime: number}) {
   const percentage = Math.round((progress / totalPage) * 100);
   console.log(`progress: ${progress}, totalPage: ${totalPage}, percentage: ${percentage}`)
 
   return (
-    loading ? (
-      <div className="text-center p-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-        <p className="mt-2 text-gray-600">Loading...</p>
-      </div>
-    ) : progress > totalPage ? (
+    progress > totalPage ? (
       <div className="text-center p-4 bg-green-50 rounded-lg">
         <p>{title}</p>
         <p className="text-green-600">すでにダウンロードが完了しています</p>
