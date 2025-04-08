@@ -1,9 +1,9 @@
-import { getInit } from "@/lib/books";
+import { getInit } from "@/libs/books";
 import { getUserFromSession } from "@/auth/auth";
 import ClientPage from "@/Components/Download/Cpage";
-import { getStartPage } from "@/lib/utils/strage";
-import { listFiles } from "@/lib/google";
-import { getIsMaster } from "@/lib/utils/database";
+import { getStartPage } from "@/libs/supabase/server/storage";
+import { listFiles } from "@/libs/google/server";
+import { getIsMaster } from "@/libs/database";
 import Restrict from "@/Components/Download/Restrict";
 
 export default async function DownloadPage({ searchParams }: { searchParams: Promise<{ title: string | undefined, id: string | undefined }> }) {
