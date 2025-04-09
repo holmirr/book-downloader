@@ -64,11 +64,12 @@ export default function Login() {
         <input type="hidden" name="redirectTo" value={searchParams.get('callbackUrl') || '/dashboard'} />
       </form>
 
-      {loginState?.message && (
-        <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">
-          {loginState.message}
-        </div>
-      )}
+      {// serverActionでログインが失敗したらstateにエラーメッセージが入る。→再レンダリング
+        loginState?.message && (
+          <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">
+            {loginState.message}
+          </div>
+        )}
     </div>
   );
 }

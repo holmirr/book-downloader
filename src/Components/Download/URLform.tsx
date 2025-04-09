@@ -4,31 +4,28 @@ import { useState, useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 
-export default function URLform({setLoading, loading, setFinishMessage, setPdfMessage }: { setLoading: (loading: boolean) => void, loading: boolean, setFinishMessage: (message: string) => void, setPdfMessage: (message: string) => void }) {
+export default function URLform() {
   const router = useRouter();
+  // useActionStateはserverActionをform elementで呼び出す際に、結果を受け取る方法を提供するために使用（serverAction + from以外では使用しない）
   const [urlActionState, urlAction, isPending] = useActionState(handleURL, { success: false, message: "" });
+  // フォームの入力値を管理
   const [url, setUrl] = useState("");
 
   useEffect(() => {
-    if (isPending) {
-      setLoading(true);
-    } 
-  }, [isPending])
-
-  useEffect(() => {
     // 初回マウント時は実行しない
-    if (!urlActionState || urlActionState.message === "") return;
-    setFinishMessage("");
-    setPdfMessage("");
+    if (urlActionState.message === "") return;
 
     if (urlActionState.success) {
+      // もしサーバーがurlの解析に成功すれば、query paramsのstringが返ってくる。
       router.replace(`/dashboard/download?${urlActionState.message}`);
     } else {
+      // もしサーバーがurlの解析に失敗すれば、エラーメッセージが返ってくる。
+      // その場合は、まっさらのページにクライアントルーティングでリダイレクトし、エラーメッセージをalertする。
       router.replace("/dashboard/download");
+      // このコンポーネントはリダイレクトによりアンマウントされないので、router.replace後も処理は実行される。
       alert(urlActionState.message);
       setUrl("");
     }
-    
   }, [urlActionState]);
 
   return (
@@ -50,10 +47,10 @@ export default function URLform({setLoading, loading, setFinishMessage, setPdfMe
         </div>
         <button 
           type="submit" 
-          disabled={loading || !url}
+          disabled={isPending || !url}
           className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {loading ? "送信中..." : "送信"}
+          {isPending ? "送信中..." : "送信"}
         </button>
       </form>
     </div>

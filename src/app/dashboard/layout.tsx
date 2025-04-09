@@ -1,17 +1,19 @@
 export const dynamic = "force-dynamic";
 
 import { signOut } from "@/auth/auth";
-import { updateUser } from "@/lib/utils/database";
-import { isValidToken } from "@/lib/utils/time";
-import { MyFetch } from "@/lib/utils/network";
-import { m3login, getToken } from "@/lib/utils/loginUtil";
+import { updateUser } from "@/libs/supabase/server/database";
+import { isValidToken } from "@/libs/time";
+import { MyFetch } from "@/libs/network";
+import { m3login, getToken } from "@/libs/loginUtil";
 import { getUserFromSession } from "@/auth/auth";
 import Sidebar from "@/Components/Sidebar";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // jwt()→session()→dbからユーザー情報を取得
   const { email, password, token_info: { expires_at }, name } = await getUserFromSession();
+  // m3のtokenが有効期限内かどうか確認。
   const isValid = isValidToken(expires_at);
-
+  // expireしていたら再度m3ログインし、トークン情報をdbにアップデートする。
   if (!isValid) {
     try {
       const client = MyFetch.createPC();
@@ -22,6 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       await updateUser(email, { token_info: { token, expires_at } });
     } catch (e) {
       console.log(e);
+      // m3トークン取得失敗時には、再度ログイン処理からやり直し。
       await signOut({ redirectTo: "/login" });
     }
   }

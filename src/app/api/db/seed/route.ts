@@ -1,5 +1,6 @@
-import { createTable } from "@/lib/utils/database";
+import { createTable } from "@/libs/database";
 
+// テーブル作成はsupabaseクライアントでは不可能なので、postgresのクライアントを使用
 export async function GET(request: Request) {
   try {
     await createTable();

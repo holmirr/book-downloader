@@ -1,21 +1,23 @@
-import sharp from 'sharp';
 import { PDFDocument } from 'pdf-lib';
-import { uploadPDFBuffer } from '../google';
-import { safeFileName } from './strage';
-import { supabase } from './strage';  // supabaseクライアントをインポート
+import { supabase } from '../../supabase/server';
+import { safeFileName } from '../../supabase/server/storage';
+import { uploadPDFBuffer } from '../../google/server';
+import sharp from 'sharp';
 
+// サーバーサイドでsupabaseからファイルを取得し、PDFを作成し、Google Driveにアップロードする関数
+// 現在の実装では、クライアントサイドでPDFを作成し、Google Driveにアップロードするので、未使用な関数
 export async function createAndUploadPDF(title: string) {
   try {
     const safeTitle = safeFileName(title);
     const dirPath = `images/${safeTitle}`;
     const pdfDoc = await PDFDocument.create();
     console.log("pdfDoc 作成")
-    
+
     // Supabaseからファイル一覧を取得
     const { data: files, error } = await supabase.storage
       .from('book-downloader')
-      .list(dirPath, {limit:1000});
-    
+      .list(dirPath, { limit: 1000 });
+
     if (error) throw error;
     if (files.length === 0) throw new Error('PNGファイルが見つかりません');
     console.log("strageからfiles名取得")
@@ -32,7 +34,7 @@ export async function createAndUploadPDF(title: string) {
 
     // 署名付きURLを一括で取得
     const signedUrls = await Promise.all(
-      pngFiles.map(fileName => 
+      pngFiles.map(fileName =>
         supabase.storage
           .from('book-downloader')
           .createSignedUrl(`${dirPath}/${fileName}`, 300) // 30秒の有効期限
@@ -114,17 +116,15 @@ export async function createAndUploadPDF(title: string) {
     // PDFバッファを生成して直接アップロード
     const pdfBytes = await pdfDoc.save();
     const pdfBuffer = Buffer.from(pdfBytes);
-    
+
     // Google Driveにアップロード
     const uploadTitle = title.replace(/\//g, '_');
     console.log("driveにアップロード", uploadTitle)
     const uploadedFile = await uploadPDFBuffer(pdfBuffer, uploadTitle);
     return uploadedFile;
-    
+
   } catch (error) {
     console.log("PDF作成とアップロードのエラー");
     throw error;
   }
 }
-
-

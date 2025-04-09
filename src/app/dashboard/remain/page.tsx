@@ -1,14 +1,16 @@
-import fs from 'fs';
-import path from 'path';
 import Link from 'next/link';
-import { getUserFromSession } from '@/auth/auth';
-import { getInit } from '@/lib/books';
 import { Clock, Book, ArrowRight } from "lucide-react";
-import { getRemainingBooks } from '@/lib/utils/strage';
+import { getUserFromSession } from '@/auth/auth';
+import { getRemainingBooks } from '@/libs/supabase/server/storage';
+import { RemainBook } from '@/libs/types';
+
 export default async function Remain() {
+  // jwt()→sesion()→dbよりuserオブジェクトを取得。
   const user = await getUserFromSession();
+  // m3のトークンを取得
   const token = user.token_info.token;
-  const remainBooks = await getRemainingBooks(token);
+  // supabaseのstorageから削除されていないフォルダを抽出し、そこからidを取得→m3からタイトルやページ数、残り時間などの情報を取得
+  const remainBooks: RemainBook[] = await getRemainingBooks(token);
   const remainLength = remainBooks.length;
 
   return (
