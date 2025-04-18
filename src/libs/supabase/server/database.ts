@@ -47,7 +47,10 @@ export async function getUser(email: string): Promise<DBUser> {
     console.error(error);
     throw error;
   }
-  return data;
+  return {
+    ...data,
+    download_at: data.download_at ? new Date(data.download_at) : null
+  }
 }
 
 // usersテーブルからユーザー情報を更新する関数
@@ -139,3 +142,4 @@ export async function saveGoogleTokens(tokens: Credentials): Promise<boolean> {
   // 成功時、dataには何も入らない
   return true;
 }
+
