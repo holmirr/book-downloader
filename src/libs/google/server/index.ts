@@ -99,7 +99,7 @@ export async function listFiles() {
   }
 }
 
-// バッファを受け取り、ファイルをアップロードする関数（現在の実装ではクライアントでアップロードするので、未使用な関数）
+// バッファを受け取り、ファイルをアップロードする関数
 export async function uploadPDFBuffer(pdfBuffer: Buffer, fileName: string) {
   try {
     // ドライブクライアントを取得
@@ -107,7 +107,7 @@ export async function uploadPDFBuffer(pdfBuffer: Buffer, fileName: string) {
     const response = await drive.files.create({
       requestBody: {
         name: `${fileName}.pdf`,
-        parents: [process.env.GOOGLE_PARENT_FOLDER_ID as string],
+        parents: [process.env.NEXT_PUBLIC_GOOGLE_PARENT_FOLDER_ID as string],
       },
       media: {
         mimeType: "application/pdf",

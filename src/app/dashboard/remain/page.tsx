@@ -3,6 +3,7 @@ import { Clock, Book, ArrowRight } from "lucide-react";
 import { getUserFromSession } from '@/auth/auth';
 import { getRemainingBooks } from '@/libs/supabase/server/storage';
 import { RemainBook } from '@/libs/types';
+import { title } from 'process';
 
 export default async function Remain() {
   // jwt()→sesion()→dbよりuserオブジェクトを取得。
@@ -39,7 +40,7 @@ export default async function Remain() {
               <div key={book.title} className="group bg-white/90 backdrop-blur rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
                 <div className="p-6 flex flex-col flex-grow">
                   <h2 className="text-lg font-medium group-hover:text-blue-600 transition-colors mb-4 flex-shrink-0">
-                    <Link href={`/dashboard/download?title=${book.title}&id=${book.bookId}`} 
+                    <Link href={`/dashboard/download?title=${encodeURIComponent(book.title)}&id=${book.bookId}`} 
                           className="flex items-center justify-between">
                       <span className="line-clamp-2 min-h-[3rem]">{book.title}</span>
                       <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transform group-hover:translate-x-1 transition-all flex-shrink-0" />

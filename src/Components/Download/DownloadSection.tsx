@@ -47,7 +47,7 @@ export default function DownloadSection({ title, id, initialLeftTime, totalPage,
       // pusher通信のエラーを受け取った際の処理
       pusherClient.bind("error", (error: any) => {
         console.error("Pusherエラー:", error);
-        handleFinish("pusherサーバーとの接続エラーが発生しました(中島まで連絡お願いします)");
+        handleFinish("pusherサーバーとの接続エラーが発生しました(中島までスクショ送信ください)");
       });
 
       // pusher通信のメッセージを受け取った際の処理
@@ -69,13 +69,13 @@ export default function DownloadSection({ title, id, initialLeftTime, totalPage,
                   handleFinish("時間切れです");
                   break;
                 case "timeleftError":
-                  handleFinish("インターバルエラーです(中島まで連絡お願いします)");
+                  handleFinish("インターバルエラーです(中島までスクショ送信ください)");
                   break;
                 case "imageError":
-                  handleFinish("画像取得エラーです(中島まで連絡お願いします)");
+                  handleFinish("画像取得エラーです(中島までスクショ送信ください)");
                   break;
                 case "databaseError":
-                  handleFinish("データベース更新エラーです(中島まで連絡お願いします)");
+                  handleFinish("データベース更新エラーです(中島までスクショ送信ください)");
                   break;
                 case "complete":
                   handleFinish("ダウンロード完了しました");
@@ -84,7 +84,7 @@ export default function DownloadSection({ title, id, initialLeftTime, totalPage,
           }
         } catch (error) {
           console.error("Pusherメッセージ処理エラー:", error);
-          handleFinish("予期せぬエラーが発生しました(中島まで連絡お願いします)");
+          handleFinish("予期せぬエラーが発生しました(中島までスクショ送信ください)");
         }
       });
     }

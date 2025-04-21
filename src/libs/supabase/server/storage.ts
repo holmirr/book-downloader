@@ -5,6 +5,7 @@ import { RemainBook } from '@/libs/types';
 const bucketName = "book-downloader";
 
 export function safeFileName(text: string): string {
+  
   // ファイル名には/が使用できないため、_に変換する。
   const safeText = text.replace(/\//g, '_');
   // ファイル名のstring(javascriptではutf16で格納）をutf8のバイナリに変換

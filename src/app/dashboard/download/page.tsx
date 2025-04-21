@@ -13,6 +13,7 @@ export default async function DownloadPage({ searchParams }: { searchParams: Pro
   // jwt→dbからuserオブジェクトを取得。
   const user = await getUserFromSession();
   // masterユーザーでない場合、ダウンロード制限時間をチェック。
+  let restricted = false;
   if (!await getIsMaster(user.name)) {
     if (user.download_at) {
       // 最後のダウロード時間から24時間経過しているかチェック。
@@ -22,12 +23,12 @@ export default async function DownloadPage({ searchParams }: { searchParams: Pro
         // if (endPage < (total_images ?? 0)) {
         //   restricted = true;
         // }
-        return <Restrict download_at={user.download_at ?? new Date()} />
+        restricted = true;
       }
     }
     // user.download_atはdbでnullable。nullの場合は、ダウンロードを許す。
   }
-  // クエリパラメータからtitleとid, finishMessageを取得。
+  // クエリパラメータからtitleとid, finishMessageを取得。（ちなみにdecodeuriComponentが内部的に実行され、urlエンコーディングがデコードされた文字列で取得される）
   // finishMessageは、前回の状態を引き継ぐために使用。
   const { title, id, finishMessage } = await searchParams;
 
@@ -62,10 +63,22 @@ export default async function DownloadPage({ searchParams }: { searchParams: Pro
     try {
       // いきなり{で始まると、javascriptはブロック文の始まりと解釈してしまうので、式は()で囲む。
       ({ timeleft, total_images } = await getInit(id, user.token_info.token));
+      
+      // pdf化とすでにダウンロード済みの場合、ダウンロード制限は必要ない
+      if (startPage > total_images || isExist) restricted = false;
+
     } catch (error) {
       // 本が見つからない場合、notFoundをtrueにする。
       notFound = true;
     }
+  } else {
+    // title, idが指定されていない場合、URLFormだけを返す＝ダウンロード制限は関係ない
+    restricted = false;
+  }
+
+
+  if (restricted) {
+    return <Restrict download_at={user.download_at ?? new Date()} />
   }
 
   return (

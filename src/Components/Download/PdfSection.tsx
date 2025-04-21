@@ -5,6 +5,9 @@ import { uploadPDFonClient } from "@/libs/google/client";
 import { useRouter } from "next/navigation";
 import { useSearchParams, usePathname } from "next/navigation";
 import { delFolderAction } from "@/action/delFolderAction";
+import { pdfAction } from "@/action/pdfAction";
+// コンポーネントの初回マウント時に１度だけ、デバイスの種類を取得する。
+import { isMobile, isTablet } from "react-device-detect";
 
 export default function PdfSection({ title, _finishMessage }: { title: string, _finishMessage: string }) {
   const [isCreatingPdf, setIsCreatingPdf] = useState(false);
@@ -18,7 +21,28 @@ export default function PdfSection({ title, _finishMessage }: { title: string, _
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const handleClick = async () => {
+  
+  const handleClickonMobile = async () => {
+    try{
+      setIsCreatingPdf(true);
+      // サーバー上でｐｄｆ変換とアップロードを行う
+      await pdfAction(title);
+      setFinishMessage("pdfに変換完了");
+      // ボタン非表示
+      setIsSuccess(true);
+      // 成功後リダイレクト
+      const params = new URLSearchParams(searchParams);
+      params.set("finishMessage", "pdfに変換完了");
+      router.replace(`${pathname}?${params.toString()}`);
+    } catch (error) {
+      console.error(error);
+      setFinishMessage("サーバー上でpdfに変換失敗");
+    } finally {
+      setIsCreatingPdf(false);
+    }
+  }
+  
+  const handleClickOnPC = async () => {
     try {
       setIsCreatingPdf(true);
       const safeTitle = title.replace(/\//g, "_");
@@ -39,7 +63,7 @@ export default function PdfSection({ title, _finishMessage }: { title: string, _
         await delFolderAction(title);
       } catch (error) {
         console.error(error);
-        successMessage = "pdfに変換完了(画像フォルダー削除失敗)→中島まで連絡ください";
+        successMessage = "pdfに変換完了(画像フォルダー削除失敗)→スクショを中島まで送信ください";
       }
       setFinishMessage(successMessage);
       // ボタン非表示
@@ -67,7 +91,7 @@ export default function PdfSection({ title, _finishMessage }: { title: string, _
       {isSuccess || (
         <button
           className="bg-blue-500 text-white px-4 py-2 rounded-md flex justify-center items-center"
-          onClick={handleClick}
+          onClick={isMobile || isTablet ? handleClickonMobile : handleClickOnPC}
           disabled={isCreatingPdf}
         >
           {isCreatingPdf ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : "pdfに変換"}

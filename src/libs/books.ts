@@ -43,7 +43,12 @@ export async function getInit(id: string, token: string): Promise<InitInfo> {
         "Authorization": `Bearer ${token}`
       }
     });
-    return await response.json() as InitInfo;
+    const data = await response.json() as InitInfo;
+    
+    //idが11884の場合、m3のバグで1ページ多めにtotal_imagesが返ってくる
+    if (id === "11884") data.total_images = 176;
+
+    return data;
 
   } catch (error) {
     console.log("初期情報取得エラー");
